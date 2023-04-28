@@ -5,6 +5,7 @@ import mbtiles from './mbtiles.js'
 import { Options, Tile } from './types.js'
 import { getTileChildren } from './utils.js'
 import { getURL } from './wms.js'
+import { getTileURL } from './tile.js'
 
 const manager = async (
     baseUrl: string,
@@ -19,7 +20,8 @@ const manager = async (
         maxZoom = 3,
         concurrency = 2,
         tileSize = 512,
-        emptyTileSizes = [334, 1096, 582],
+        emptyTileSizes = [334],
+        serverType = 'wms',
     }: Options,
 ) => {
     const db = await mbtiles(`${mbtilesFile}?mode=rwc`)
@@ -31,19 +33,23 @@ const manager = async (
             return
         }
         const d = await db.get(z, x, y).catch(async () => {
-            const url = getURL(baseUrl, layer, x, y, z, {
-                tileSize,
-                width: tileSize,
-                height: tileSize,
-            })
-            console.log(z, x, y, 'Downloading')
-            return await got(url, {
+            const url =
+                serverType == 'wms'
+                    ? getURL(baseUrl, layer, x, y, z, {
+                          tileSize,
+                          width: tileSize,
+                          height: tileSize,
+                      })
+                    : getTileURL(baseUrl, x, y, z)
+            const f = await got(url, {
                 resolveBodyOnly: true,
                 responseType: 'buffer',
             }).catch((error) => {
                 console.log(z, x, y, error)
                 return undefined
             })
+            console.log(z, x, y, 'Downloaded, ', f?.length, 'bytes')
+            return f
         })
         if (d !== undefined) {
             db.put(z, x, y, d)

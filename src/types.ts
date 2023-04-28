@@ -4,6 +4,7 @@ export interface Options {
     tileSize?: number
     concurrency?: number
     emptyTileSizes?: number[]
+    serverType?: ServerType
 }
 
 export interface Tile {
@@ -16,3 +17,5 @@ export interface TileWithImage extends Tile {
     image: Buffer
     last: boolean
 }
+
+export type ServerType = 'wms' | 'tile'

@@ -25,23 +25,31 @@ Download maps from WMS and save it into mbtiles.
     $ wms2mbtiles <wmsUrl> <layer> <output.mbtiles>
 
   Options
-    --maxZoom, -m       maximal zoom to download, default 3
-    --concurrency, -c   number of concurrent downloads, defaukt 2
-    --tileSize, -t      tile size in pixels, default 512
-    --emptyTileSize, -e size of empty tile in bytes, default 334, 1096, 582
-                        use it multiple times to set multiple sizes
+    --maxZoom, -m        maximal zoom to download, default 3
+    --concurrency, -c    number of concurrent downloads, defaukt 2
+    --tileSize, -t       tile size in pixels, default 512
+    --emptyTileSizes, -e size of empty tile in bytes, default 334
+                         use it multiple times to set multiple sizes
     Coordinates of a starting tile
-    -z                  zoom, default 0
-    -x                  x, default 0
-    -y                  y, default 0
+    -z                   zoom, default 0
+    -x                   x, default 0
+    -y                   y, default 0
 
 
-  Examples
+  Examples WMS
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
       --maxZoom 5 \
       --concurrency 2 \
       --tileSize 256 \
-      --emptyTileSize 132 \
-      --emptyTileSize 456
+      --emptyTileSizes 123 \
+      --emptyTileSizes 456
+
+  Examples Tile server
+    $ wms2mbtiles https://mywmsserver.com/{z}/{x}/{y} output.mbtiles
+      --serverType tile \
+      --maxZoom 5 \
+      --concurrency 2 \
+      --emptyTileSizes 123 \
+      --emptyTileSizes 456
 ```
