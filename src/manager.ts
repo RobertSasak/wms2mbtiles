@@ -52,7 +52,7 @@ const manager = async (
             return f
         })
         if (d !== undefined) {
-            db.put(z, x, y, d)
+            await db.put(z, x, y, d) 
             if (emptyTileSizes.every((a) => a !== d.length)) {
                 q.unshift(getTileChildren({ x, y, z }))
             }
