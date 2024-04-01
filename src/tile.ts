@@ -17,8 +17,11 @@ export const getTileURL = (
     y: number,
     z: number,
 ): string => {
+    const invertedY = (Math.pow(2, z) - 1) - y;
+
     return baseUrl
         .replace('{x}', x.toString())
         .replace('{y}', y.toString())
+        .replace('{-y}', invertedY.toString())
         .replace('{z}', z.toString())
 }
