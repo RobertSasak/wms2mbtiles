@@ -4,3 +4,4 @@ yarn-error.log
 *.mbtiles
 *.pmtiles
 package-lock.json
+.DS_Store

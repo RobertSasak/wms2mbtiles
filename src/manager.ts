@@ -49,14 +49,16 @@ const manager = async (
                 return undefined
             })
             console.log(z, x, y, 'Downloaded, ', f?.length, 'bytes')
+            if (f !== undefined) {
+                await db.put(z, x, y, f)
+            }
             return f
         })
-        if (d !== undefined) {
-            await db.put(z, x, y, d) 
-            if (emptyTileSizes.every((a) => a !== d.length)) {
-                q.unshift(getTileChildren({ x, y, z }))
-            }
+
+        if (d != undefined && !emptyTileSizes.includes(d.length)) {
+            q.unshift(getTileChildren({ x, y, z }))
         }
+
         callback()
     }, concurrency)
 
