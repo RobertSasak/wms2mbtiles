@@ -8,7 +8,8 @@
         "start": "tsc && node dist/cli.js",
         "build": "tsc",
         "lint": "tslint --project tsconfig.json",
-        "deploy": "npx np"
+        "deploy": "npx np",
+        "test": "echo Later"
     },
     "bin": {
         "wms2mbtiles": "./dist/cli.js"
