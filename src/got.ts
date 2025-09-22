@@ -13,7 +13,9 @@ const g = got.extend({
     },
     resolveBodyOnly: true,
     responseType: 'buffer',
-    timeout: 40000,
+    timeout: {
+        request: 40000,
+    },
     retry: {
         limit: 2,
         statusCodes: [400, 408, 413, 429, 500, 502, 503, 504, 521, 522, 524],

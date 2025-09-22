@@ -54,7 +54,6 @@ const cli = meow(
             emptyTileSizes: {
                 type: 'number',
                 shortFlag: 'e',
-                defaul: 334,
                 isMultiple: true,
             },
             serverType: {

@@ -1,4 +1,4 @@
-import { Tile } from './types'
+import { Tile } from './types.js'
 
 export const getTileChildren = ({ x, y, z }: Tile) => {
     const xx = x * 2
