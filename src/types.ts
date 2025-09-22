@@ -5,6 +5,9 @@ export interface Options {
     concurrency?: number
     emptyTileSizes?: number[]
     serverType?: ServerType
+    transparent?: boolean
+    format?: string
+    verbose?: boolean
 }
 
 export interface Tile {

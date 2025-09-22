@@ -17,6 +17,10 @@ const cli = meow(
     -z                   zoom, default 0
     -x                   x, default 0
     -y                   y, default 0
+    --serverType, -s     server type, wms or tile, default wms
+    --transparent        for WMS, request transparent tiles, default true
+    --format             for WMS, image format, default image/png
+    --verbose, -v        verbose output, default false
     
 
   Examples WMS
@@ -25,6 +29,9 @@ const cli = meow(
       --maxZoom 5 \\
       --concurrency 2 \\
       --tileSize 256 \\
+      --transparent false \\
+      --format image/png;mode=8bit \\
+      --verbose \\
       --emptyTileSizes 123 \\
       --emptyTileSizes 456
 
@@ -73,6 +80,19 @@ const cli = meow(
             z: {
                 type: 'number',
                 default: 0,
+            },
+            transparent: {
+                type: 'boolean',
+                default: true,
+            },
+            format: {
+                type: 'string',
+                default: 'image/png',
+            },
+            verbose: {
+                type: 'boolean',
+                default: false,
+                shortFlag: 'v',
             },
         },
     },

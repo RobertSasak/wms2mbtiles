@@ -9,6 +9,7 @@ export interface GetUrlOptions {
     srs?: string
     width?: number
     height?: number
+    transparent?: boolean
 }
 
 export const getURL = (
@@ -26,6 +27,7 @@ export const getURL = (
         srs = 'EPSG:3857',
         width = 512,
         height = 512,
+        transparent = true,
     }: GetUrlOptions,
 ): string => {
     const url =
@@ -41,6 +43,7 @@ export const getURL = (
             'width=' + width,
             'height=' + height,
             'layers=' + layer,
+            'transparent=' + transparent,
         ].join('&')
 
     return url

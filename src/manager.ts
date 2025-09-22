@@ -22,6 +22,9 @@ const manager = async (
         tileSize = 512,
         emptyTileSizes = [334],
         serverType = 'wms',
+        transparent = true,
+        format = 'image/png',
+        verbose = false,
     }: Options,
 ) => {
     const db = await mbtiles(`${mbtilesFile}?mode=rwc`)
@@ -39,8 +42,13 @@ const manager = async (
                           tileSize,
                           width: tileSize,
                           height: tileSize,
+                          transparent,
+                          format,
                       })
                     : getTileURL(baseUrl, x, y, z)
+            if (verbose) {
+                console.log(url)
+            }
             const f = await got(url, {
                 resolveBodyOnly: true,
                 responseType: 'buffer',
