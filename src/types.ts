@@ -23,3 +23,15 @@ export interface TileWithImage extends Tile {
 }
 
 export type ServerType = 'wms' | 'tile'
+
+export interface ImageInfo {
+    fullImage: ImageType
+    quartals: ImageType[]
+    symbol: string
+}
+
+export enum ImageType {
+    transparent = 'transparent',
+    solid = 'solid',
+    mixed = 'mixed',
+}
