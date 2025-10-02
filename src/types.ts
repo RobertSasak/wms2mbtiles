@@ -4,6 +4,7 @@ export interface Options {
     tileSize?: number
     concurrency?: number
     emptyTileSizes?: number[]
+    skipTransparent?: boolean
     serverType?: ServerType
     transparent?: boolean
     format?: string

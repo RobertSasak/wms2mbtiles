@@ -6,6 +6,7 @@ import { Options, Tile } from './types.js'
 import { getTileChildren } from './utils.js'
 import { getURL } from './wms.js'
 import { getTileURL } from './tile.js'
+import { isEmptyImage } from './image.js'
 
 const manager = async (
     baseUrl: string,
@@ -20,7 +21,8 @@ const manager = async (
         maxZoom = 3,
         concurrency = 2,
         tileSize = 512,
-        emptyTileSizes = [334],
+        emptyTileSizes = [],
+        skipTransparent = false,
         serverType = 'wms',
         transparent = true,
         format = 'image/png',
@@ -56,10 +58,29 @@ const manager = async (
                 console.log(z, x, y, error)
                 return undefined
             })
-            console.log(z, x, y, 'Downloaded, ', f?.length, 'bytes')
-            if (f !== undefined) {
-                await db.put(z, x, y, f)
+
+            if (f == undefined) {
+                return undefined
             }
+
+            const isTransparent = skipTransparent
+                ? await isEmptyImage(f)
+                : undefined
+
+            console.log(
+                z,
+                x,
+                y,
+                'Downloaded',
+                f?.length,
+                'bytes',
+                skipTransparent
+                    ? isTransparent
+                        ? 'transparent'
+                        : 'not transparent'
+                    : '',
+            )
+            await db.put(z, x, y, f)
             return f
         })
 

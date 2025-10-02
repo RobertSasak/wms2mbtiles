@@ -49,6 +49,7 @@ const cli = meow(
             maxZoom: {
                 type: 'number',
                 shortFlag: 'm',
+                default: 3,
             },
             concurrency: {
                 type: 'number',
@@ -62,6 +63,10 @@ const cli = meow(
                 type: 'number',
                 shortFlag: 'e',
                 isMultiple: true,
+            },
+            skipTransparent: {
+                type: 'boolean',
+                default: false,
             },
             serverType: {
                 type: 'string',
