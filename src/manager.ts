@@ -31,12 +31,15 @@ const manager = async (
 ) => {
     const db = await mbtiles(`${mbtilesFile}?mode=rwc`)
     await db.startWriting()
+    let count = 0
+    let downloaded = 0
     const q = queue(async (tile: Tile, callback) => {
         const { x, y, z } = tile
         if (z > maxZoom) {
             callback()
             return
         }
+        count++
         const d = await db.get(z, x, y).catch(async () => {
             const url =
                 serverType == 'wms'
@@ -63,22 +66,14 @@ const manager = async (
                 return undefined
             }
 
+            downloaded++
+
             const isTransparent = skipTransparent
                 ? await isEmptyImage(f)
                 : undefined
-
+            const icon = skipTransparent ? (isTransparent ? '□' : '■') : ''
             console.log(
-                z,
-                x,
-                y,
-                'Downloaded',
-                f?.length,
-                'bytes',
-                skipTransparent
-                    ? isTransparent
-                        ? 'transparent'
-                        : 'not transparent'
-                    : '',
+                `Tile ${z} ${x} ${y} downloaded ~ ${f?.length} bytes ${icon}`,
             )
             await db.put(z, x, y, f)
             return f
@@ -94,6 +89,8 @@ const manager = async (
     q.push(startTile)
 
     await q.drain().finally(db.stopWriting)
+    console.log('Downloaded tiles:', downloaded)
+    console.log('Total tiles:', count)
 }
 
 export default manager
