@@ -30,22 +30,38 @@ Download maps from WMS and save it into mbtiles.
     --tileSize, -t       tile size in pixels, default 512
     --emptyTileSizes, -e size of empty tile in bytes, default 334
                          use it multiple times to set multiple sizes
+    --serverType, -s     server type, wms or tile, default wms
+    --skipTransparent    skip tiles that are fully transparent, default false
+    --verbose, -v        verbose output, default false
     Coordinates of a starting tile
     -z                   zoom, default 0
     -x                   x, default 0
     -y                   y, default 0
+    WMS server options
+    --mosaicDownload     faster downloading of of tiles by combining multiple
+                         tiles into one request, default false
+    --maxWidth        when mosaicDownload is set, maximal width of the
+                         mosaic in pixels, default 2048
+    --transparent     request transparent tiles, default true
+    --format          image format, default image/png
+    Tile compression
+    --compression        compress tiles, options: none, png, webp. Need to be
+                         provided when mosaicDownload is used, default none
+    --quality            quality for compression, 0-100, default 80
 
-
-  Examples WMS
+  Example for a WMS
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
       --maxZoom 5 \
       --concurrency 2 \
       --tileSize 256 \
+      --transparent false \
+      --format image/png;mode=8bit \
+      --verbose \
       --emptyTileSizes 123 \
       --emptyTileSizes 456
 
-  Examples Tile server
+  Example for a Tile server
     $ wms2mbtiles https://mywmsserver.com/{z}/{x}/{y} output.mbtiles
       --serverType tile \
       --maxZoom 5 \
