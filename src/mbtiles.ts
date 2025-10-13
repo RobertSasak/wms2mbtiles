@@ -5,6 +5,7 @@ interface DB {
     put: (z: number, x: number, y: number, buffer: Buffer) => Promise<undefined>
     startWriting: () => Promise<undefined>
     stopWriting: () => Promise<undefined>
+    _commit: () => Promise<undefined>
 }
 
 export default (path: string) =>
@@ -45,6 +46,15 @@ export default (path: string) =>
                     stopWriting: () =>
                         new Promise((resolve, reject) => {
                             result.stopWriting((error) => {
+                                if (error) {
+                                    reject(error)
+                                }
+                                resolve(undefined)
+                            })
+                        }),
+                    _commit: () =>
+                        new Promise((resolve, reject) => {
+                            result._commit((error) => {
                                 if (error) {
                                     reject(error)
                                 }

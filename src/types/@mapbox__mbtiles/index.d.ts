@@ -15,6 +15,7 @@ declare module '@mapbox/mbtiles' {
         ) => void
         startWriting: (callback: (error: any) => void) => void
         stopWriting: (callback: (error: any) => void) => void
+        _commit: (callback: (error: any) => void) => void
     }
 
     class Module {

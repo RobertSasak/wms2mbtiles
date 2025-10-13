@@ -1,14 +1,20 @@
 export interface Options {
-    startTile?: Tile
     maxZoom?: number
-    tileSize?: number
     concurrency?: number
+    tileSize?: number
     emptyTileSizes?: number[]
     skipTransparent?: boolean
     serverType?: ServerType
+    verbose?: boolean
+    startTile?: Tile
+    // wms options
+    mosaicDownload?: boolean
+    maxWidth?: number
     transparent?: boolean
     format?: string
-    verbose?: boolean
+    // compression options
+    compression?: CompressionType
+    quality?: number
 }
 
 export interface Tile {
@@ -34,4 +40,18 @@ export enum ImageType {
     transparent = 'transparent',
     solid = 'solid',
     mixed = 'mixed',
+}
+
+export interface WMSOptions {
+    tileSize: number
+    width: number
+    height: number
+    transparent: boolean
+    format: string
+}
+
+export enum CompressionType {
+    none = 'none',
+    webp = 'webp',
+    png = 'png',
 }

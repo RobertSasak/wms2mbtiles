@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import meow from 'meow'
+
 import manager from './manager.js'
+import { CompressionType, ServerType } from './types.js'
 
 const cli = meow(
     `  Usage
@@ -13,17 +15,26 @@ const cli = meow(
     --tileSize, -t       tile size in pixels, default 512
     --emptyTileSizes, -e size of empty tile in bytes, default 334
                          use it multiple times to set multiple sizes
+    --serverType, -s     server type, wms or tile, default wms
+    --skipTransparent    skip tiles that are fully transparent, default false
+    --verbose, -v        verbose output, default false
     Coordinates of a starting tile
     -z                   zoom, default 0
     -x                   x, default 0
     -y                   y, default 0
-    --serverType, -s     server type, wms or tile, default wms
-    --transparent        for WMS, request transparent tiles, default true
-    --format             for WMS, image format, default image/png
-    --verbose, -v        verbose output, default false
-    
+    WMS server options
+    --mosaicDownload     faster downloading of of tiles by combining multiple
+                         tiles into one request, default false
+    --maxWidth        when mosaicDownload is set, maximal width of the
+                         mosaic in pixels, default 2048
+    --transparent     request transparent tiles, default true
+    --format          image format, default image/png
+    Tile compression
+    --compression        compress tiles, options: none, png, webp. Need to be 
+                         provided when mosaicDownload is used, default none
+    --quality            quality for compression, 0-100, default 80
 
-  Examples WMS
+  Example for a WMS
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
       --maxZoom 5 \\
@@ -35,7 +46,7 @@ const cli = meow(
       --emptyTileSizes 123 \\
       --emptyTileSizes 456
 
-  Examples Tile server
+  Example for a Tile server
     $ wms2mbtiles https://mywmsserver.com/{z}/{x}/{y} output.mbtiles
       --serverType tile \\
       --maxZoom 5 \\
@@ -64,15 +75,20 @@ const cli = meow(
                 shortFlag: 'e',
                 isMultiple: true,
             },
-            skipTransparent: {
-                type: 'boolean',
-                default: false,
-            },
             serverType: {
                 type: 'string',
                 shortFlag: 's',
                 choices: ['wms', 'tile'],
                 default: 'wms',
+            },
+            skipTransparent: {
+                type: 'boolean',
+                default: false,
+            },
+            verbose: {
+                type: 'boolean',
+                default: false,
+                shortFlag: 'v',
             },
             x: {
                 type: 'number',
@@ -86,6 +102,14 @@ const cli = meow(
                 type: 'number',
                 default: 0,
             },
+            mosaicDownload: {
+                type: 'boolean',
+                default: false,
+            },
+            maxWidth: {
+                type: 'number',
+                default: 2048,
+            },
             transparent: {
                 type: 'boolean',
                 default: true,
@@ -94,10 +118,14 @@ const cli = meow(
                 type: 'string',
                 default: 'image/png',
             },
-            verbose: {
-                type: 'boolean',
-                default: false,
-                shortFlag: 'v',
+            compression: {
+                type: 'string',
+                choices: ['none', 'png', 'webp'],
+                default: 'none',
+            },
+            quality: {
+                type: 'number',
+                default: 80,
             },
         },
     },
@@ -109,7 +137,9 @@ if (cli.input.length === 0) {
         'You need to provide at least two parameters: url and output file',
     )
 } else {
-    const serverType = cli.flags.serverType as 'wms' | 'tile'
+    const serverType = cli.flags.serverType as ServerType
+    const compression = cli.flags.compression as CompressionType
+
     let [wmsUrl, layer, outputFile] = cli.input
 
     if (cli.input.length === 2) {
@@ -123,6 +153,7 @@ if (cli.input.length === 0) {
     }
     manager(wmsUrl, layer, outputFile, {
         ...cli.flags,
+        compression,
         serverType,
         startTile,
     })

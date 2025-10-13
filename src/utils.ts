@@ -11,3 +11,19 @@ export const getTileChildren = ({ x, y, z }: Tile) => {
         { x: xx + 1, y: yy + 1, z: zz },
     ]
 }
+
+export const getMaxMosaicWidth = (
+    z: number,
+    x: number,
+    y: number,
+    maxZoom: number,
+    maxWidth: number,
+    tileSize: number,
+) => {
+    let width = tileSize
+    while (z < maxZoom && width < maxWidth) {
+        ;({ z, x, y } = getTileChildren({ x, y, z })[0])
+        width *= 2
+    }
+    return { z, x, y, width }
+}

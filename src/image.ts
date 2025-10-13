@@ -1,5 +1,5 @@
 import sharp from 'sharp'
-import { ImageInfo, ImageType } from './types.js'
+import { CompressionType, ImageInfo, ImageType } from './types.js'
 
 const checkRectagle = (
     data: Buffer<ArrayBufferLike>,
@@ -31,22 +31,22 @@ const checkRectagle = (
 }
 
 const symbolMap: { [key: number]: string } = {
-    0: '⠀',
-    1: '▗',
-    2: '▖',
-    3: '▄',
-    4: '▝',
-    5: '▐',
-    6: '▞',
-    7: '▟',
-    8: '▘',
-    9: '▚',
-    10: '▌',
-    11: '▙',
-    12: '▀',
-    13: '▜',
-    14: '▛',
-    15: '█',
+    0: '⠀', // 0000
+    1: '▘', // 0001
+    2: '▝', // 0010
+    3: '▀', // 0011
+    4: '▖', // 0100
+    5: '▌', // 0101
+    6: '▞', // 0110
+    7: '▛', // 0111
+    8: '▗', // 1000
+    9: '▚', // 1001
+    10: '▐', // 1010
+    11: '▜', // 1011
+    12: '▄', // 1100
+    13: '▙', // 1101
+    14: '▟', // 1110
+    15: '█', // 1111
 }
 
 const getSymbol = (quadrants: ImageType[]) => {
@@ -137,4 +137,76 @@ export const getImageInfo = async (buffer: Buffer): Promise<ImageInfo> => {
         quartals,
         symbol,
     }
+}
+
+export const sliceMosaic = async (
+    buffer: Buffer,
+    tileWidth: number,
+    compression: CompressionType,
+    quality: number,
+) => {
+    const image = sharp(buffer)
+    const { width, height } = await image.metadata()
+    let tiles = []
+    for (let dy = 0; dy * tileWidth < width; dy++) {
+        for (let dx = 0; dx * tileWidth < height; dx++) {
+            const t = sharp(buffer).extract({
+                left: dx * tileWidth,
+                top: dy * tileWidth,
+                width: tileWidth,
+                height: tileWidth,
+            })
+            if (compression === CompressionType.webp) {
+                t.webp({
+                    quality,
+                    alphaQuality: 0,
+                    effort: 6,
+                })
+            } else if (compression === CompressionType.png) {
+                t.png({
+                    compressionLevel: 9,
+                    effort: 10,
+                    adaptiveFiltering: true,
+                    quality: 100,
+                    progressive: true,
+                    palette: true,
+                    force: true,
+                })
+            }
+            tiles.push(
+                t.toBuffer().then((tile) => ({
+                    dx,
+                    dy,
+                    tile,
+                })),
+            )
+        }
+    }
+    return Promise.all(tiles)
+}
+
+const compressTile = async (
+    buffer: Buffer,
+    compression: CompressionType,
+    quality: number,
+) => {
+    if (compression === CompressionType.webp) {
+        buffer = await sharp(buffer)
+            .webp({
+                quality,
+                alphaQuality: 0,
+                effort: 6,
+            })
+            .toBuffer()
+    } else if (compression === CompressionType.png) {
+        buffer = await sharp(buffer)
+            .png({
+                quality,
+                compressionLevel: 9,
+                effort: 10,
+                palette: true,
+            })
+            .toBuffer()
+    }
+    return buffer
 }
