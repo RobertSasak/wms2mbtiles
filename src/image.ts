@@ -185,7 +185,7 @@ export const sliceMosaic = async (
     return Promise.all(tiles)
 }
 
-const compressTile = async (
+export const compressTile = async (
     buffer: Buffer,
     compression: CompressionType,
     quality: number,

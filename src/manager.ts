@@ -12,7 +12,7 @@ import {
 import { getMaxMosaicWidth, getTileChildren } from './utils.js'
 import { getURL } from './wms.js'
 import { getTileURL } from './tile.js'
-import { getImageInfo, sliceMosaic } from './image.js'
+import { compressTile, getImageInfo, sliceMosaic } from './image.js'
 
 const downloadUrl = async (url: string) => {
     return await got(url, {
@@ -239,10 +239,3 @@ const manager = async (
 }
 
 export default manager
-function compressTile(
-    f: Buffer<ArrayBufferLike>,
-    compression: CompressionType,
-    quality: number,
-): Buffer<ArrayBufferLike> | PromiseLike<Buffer<ArrayBufferLike>> {
-    throw new Error('Function not implemented.')
-}
