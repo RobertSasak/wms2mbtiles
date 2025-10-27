@@ -27,3 +27,35 @@ export const getMaxMosaicWidth = (
     }
     return { z, x, y, width }
 }
+
+export const getTileBBox = (
+    x: number,
+    y: number,
+    z: number,
+    tileSize = 512,
+): string => {
+    y = Math.pow(2, z) - y - 1
+
+    const min = getMercCoords(x * tileSize, y * tileSize, z, tileSize)
+    const max = getMercCoords(
+        (x + 1) * tileSize,
+        (y + 1) * tileSize,
+        z,
+        tileSize,
+    )
+
+    return `${min[0]},${min[1]},${max[0]},${max[1]}`
+}
+
+export const getMercCoords = (
+    x: number,
+    y: number,
+    z: number,
+    tileSize = 512,
+): [number, number] => {
+    const resolution = (2 * Math.PI * 6378137) / tileSize / Math.pow(2, z)
+    const mercX = x * resolution - (2 * Math.PI * 6378137) / 2.0
+    const mercY = y * resolution - (2 * Math.PI * 6378137) / 2.0
+
+    return [mercX, mercY]
+}

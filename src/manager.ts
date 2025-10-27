@@ -2,15 +2,10 @@ import { queue } from 'async'
 
 import got from './got.js'
 import mbtiles from './mbtiles.js'
-import {
-    CompressionType,
-    ImageType,
-    Options,
-    Tile,
-    WMSOptions,
-} from './types.js'
+import { CompressionType, ImageType, Options, Tile } from './types.js'
 import { getMaxMosaicWidth, getTileChildren } from './utils.js'
-import { getURL } from './wms.js'
+import { getWMSURL, WMSOptions } from './wms.js'
+import { ArgisOptions, getArcgisURL } from './arcgis.js'
 import { getTileURL } from './tile.js'
 import { compressTile, getImageInfo, sliceMosaic } from './image.js'
 
@@ -62,6 +57,21 @@ const manager = async (
         transparent,
         format,
     }
+    const arcgisOptions: ArgisOptions = {
+        tileSize,
+        width: tileSize,
+        height: tileSize,
+        format,
+    }
+
+    const getUrl =
+        serverType == 'wms'
+            ? (x: number, y: number, z: number) =>
+                  getWMSURL(baseUrl, layer, x, y, z, wmsOptions)
+            : serverType == 'arcgis'
+            ? (x: number, y: number, z: number) =>
+                  getArcgisURL(baseUrl, x, y, z, arcgisOptions)
+            : (x: number, y: number, z: number) => getTileURL(baseUrl, x, y, z)
     const db = await mbtiles(`${mbtilesFile}?mode=rwc`)
     await db.startWriting()
     let total = 0,
@@ -85,10 +95,7 @@ const manager = async (
             })
             .catch(async () => {
                 cached = false
-                url =
-                    serverType == 'wms'
-                        ? getURL(baseUrl, layer, x, y, z, wmsOptions)
-                        : getTileURL(baseUrl, x, y, z)
+                url = getUrl(x, y, z)
                 const f = await downloadUrl(url)
                 if (f) {
                     downloaded++
@@ -154,12 +161,7 @@ const manager = async (
             )
         }
 
-        if (
-            mosaicDownload &&
-            fullImage === ImageType.solid &&
-            serverType == 'wms' &&
-            z < maxZoom
-        ) {
+        if (mosaicDownload && fullImage === ImageType.solid && z < maxZoom) {
             const {
                 z: mz,
                 x: mx,
@@ -167,12 +169,20 @@ const manager = async (
                 width: mosaicSize,
             } = getMaxMosaicWidth(z, x, y, maxZoom, maxWidth, tileSize)
             if (!(await db.get(mz, mx, my).catch(() => false))) {
-                const url = getURL(baseUrl, layer, x, y, z, {
-                    ...wmsOptions,
-                    tileSize: mosaicSize,
-                    width: mosaicSize,
-                    height: mosaicSize,
-                })
+                const url =
+                    serverType === 'wms'
+                        ? getWMSURL(baseUrl, layer, x, y, z, {
+                              ...wmsOptions,
+                              tileSize: mosaicSize,
+                              width: mosaicSize,
+                              height: mosaicSize,
+                          })
+                        : getArcgisURL(baseUrl, x, y, z, {
+                              ...arcgisOptions,
+                              tileSize: mosaicSize,
+                              width: mosaicSize,
+                              height: mosaicSize,
+                          })
                 const mosaic = await downloadUrl(url)
                 console.log(
                     'Downloading mosaic',

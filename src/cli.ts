@@ -78,7 +78,7 @@ const cli = meow(
             serverType: {
                 type: 'string',
                 shortFlag: 's',
-                choices: ['wms', 'tile'],
+                choices: ['wms', 'tile', 'arcgis'],
                 default: 'wms',
             },
             skipTransparent: {
@@ -136,6 +136,8 @@ if (cli.input.length === 0) {
     console.error(
         'You need to provide at least two parameters: url and output file',
     )
+} else if (cli.flags.mosaicDownload && cli.flags.serverType === 'tile') {
+    console.error('Mosaic download works only with server type WMS or Arcgis')
 } else {
     const serverType = cli.flags.serverType as ServerType
     const compression = cli.flags.compression as CompressionType

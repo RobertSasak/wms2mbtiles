@@ -28,7 +28,7 @@ export interface TileWithImage extends Tile {
     last: boolean
 }
 
-export type ServerType = 'wms' | 'tile'
+export type ServerType = 'wms' | 'tile' | 'arcgis'
 
 export interface ImageInfo {
     fullImage: ImageType
@@ -40,14 +40,6 @@ export enum ImageType {
     transparent = 'transparent',
     solid = 'solid',
     mixed = 'mixed',
-}
-
-export interface WMSOptions {
-    tileSize: number
-    width: number
-    height: number
-    transparent: boolean
-    format: string
 }
 
 export enum CompressionType {
