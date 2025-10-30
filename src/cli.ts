@@ -17,6 +17,7 @@ const cli = meow(
                          use it multiple times to set multiple sizes
     --serverType, -s     server type, wms or tile, default wms
     --skipTransparent    skip tiles that are fully transparent, default false
+    --skipMonochromatic  skip tiles contain only single color, default false
     --verbose, -v        verbose output, default false
     Coordinates of a starting tile
     -z                   zoom, default 0
@@ -25,10 +26,10 @@ const cli = meow(
     WMS server options
     --mosaicDownload     faster downloading of of tiles by combining multiple
                          tiles into one request, default false
-    --maxWidth        when mosaicDownload is set, maximal width of the
+    --maxWidth           when mosaicDownload is set, maximal width of the
                          mosaic in pixels, default 2048
-    --transparent     request transparent tiles, default true
-    --format          image format, default image/png
+    --transparent        request transparent tiles, default true
+    --format             image format, default image/png
     Tile compression
     --compression        compress tiles, options: none, png, webp. Need to be 
                          provided when mosaicDownload is used, default none
@@ -82,6 +83,10 @@ const cli = meow(
                 default: 'wms',
             },
             skipTransparent: {
+                type: 'boolean',
+                default: false,
+            },
+            skipMonochromatic: {
                 type: 'boolean',
                 default: false,
             },

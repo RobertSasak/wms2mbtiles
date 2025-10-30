@@ -2,12 +2,22 @@
 
 Download maps from WMS server and save it into mbtiles. Instead of selecting an area and then download it this library starts with a top tile. Then download 4 subtiles. Everytime it encounters en empty/transparent map tile this area is skipped. This is more suitable for sparse maps.
 
+## Features
+
+-   skip (empty) tiles by specifing tile size in bytes and it's children
+-   skip transparent tiles and it's children
+-   skip monochromatic(images with single background color) tiles and it's children
+-   for WMS and Arcgic, speed up by requesting one single mosaic and then slicing it into tiles.
+-   compress tiles on the fly to WEBP or PNG
+
 ## Install
 
 ```sh
 yarn global add wms2mbtiles
 # or
 npm add -g wms2mbtiles
+# or simply run without instalation
+npx wm2mbtiles
 ```
 
 ## Usage
@@ -32,18 +42,19 @@ Download maps from WMS and save it into mbtiles.
                          use it multiple times to set multiple sizes
     --serverType, -s     server type, wms or tile, default wms
     --skipTransparent    skip tiles that are fully transparent, default false
+    --skipMonochromatic  skip tiles contain only single color, default false
     --verbose, -v        verbose output, default false
     Coordinates of a starting tile
     -z                   zoom, default 0
     -x                   x, default 0
     -y                   y, default 0
-    WMS server options
+    WMS/Arcgis server options
     --mosaicDownload     faster downloading of of tiles by combining multiple
                          tiles into one request, default false
-    --maxWidth        when mosaicDownload is set, maximal width of the
+    --maxWidth           when mosaicDownload is set, maximal width of the
                          mosaic in pixels, default 2048
-    --transparent     request transparent tiles, default true
-    --format          image format, default image/png
+    --transparent        request transparent tiles, default true
+    --format             image format, default image/png
     Tile compression
     --compression        compress tiles, options: none, png, webp. Need to be
                          provided when mosaicDownload is used, default none

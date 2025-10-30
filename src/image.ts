@@ -1,33 +1,82 @@
-import sharp from 'sharp'
-import { CompressionType, ImageInfo, ImageType } from './types.js'
+import sharp, { PngOptions, WebpOptions } from 'sharp'
+import {
+    CompressionType,
+    ImageComposition,
+    ImageInfo,
+    ImageType,
+} from './types.js'
+
+const WEBP_OPTIONS: WebpOptions = {
+    alphaQuality: 0,
+    effort: 6,
+}
+
+const PNG_OPTIONS: PngOptions = {
+    compressionLevel: 9,
+    effort: 10,
+    palette: true,
+    adaptiveFiltering: true,
+    progressive: true,
+    force: true,
+}
 
 const checkRectagle = (
     data: Buffer<ArrayBufferLike>,
-    width: number,
-    height: number,
     channels: number,
+    width: number,
     xStart: number,
     yStart: number,
     xEnd: number,
     yEnd: number,
-) => {
+): ImageComposition => {
     let transparent = true
     let solid = true
+    let firstColor: string | undefined
+    let isMonochromatic = true
+
     for (let y = yStart; y < yEnd; y++) {
         for (let x = xStart; x < xEnd; x++) {
             const i = (y * width + x) * channels
-            const alpha = data[i + 3]
-            if (alpha === 0) {
+            const alpha = data[i + channels - 1]
+            if (channels > 3 && alpha !== 255) {
                 solid = false
+                isMonochromatic = false
             } else {
                 transparent = false
+                const r = data[i]
+                const g = data[i + 1]
+                const b = data[i + 2]
+                const color =
+                    '#' +
+                    r.toString(16).padStart(2, '0') +
+                    g.toString(16).padStart(2, '0') +
+                    b.toString(16).padStart(2, '0')
+
+                if (!firstColor) {
+                    firstColor = color
+                } else if (color !== firstColor) {
+                    isMonochromatic = false
+                }
             }
-            if (!solid && !transparent) {
-                return ImageType.mixed
+
+            if (!solid && !transparent && !isMonochromatic) {
+                return {
+                    type: ImageType.mixed,
+                }
             }
         }
     }
-    return solid ? ImageType.solid : ImageType.transparent
+
+    if (transparent) {
+        return { type: ImageType.transparent }
+    }
+    if (isMonochromatic) {
+        return {
+            type: ImageType.monochromatic,
+            color: firstColor,
+        }
+    }
+    return { type: ImageType.solid }
 }
 
 const symbolMap: { [key: number]: string } = {
@@ -49,12 +98,12 @@ const symbolMap: { [key: number]: string } = {
     15: '█', // 1111
 }
 
-const getSymbol = (quadrants: ImageType[]) => {
+const getSymbol = (quadrants: ImageComposition[]) => {
     const q = quadrants
-    const q3 = q[3] === ImageType.transparent ? 0 : 1
-    const q2 = q[2] === ImageType.transparent ? 0 : 1
-    const q1 = q[1] === ImageType.transparent ? 0 : 1
-    const q0 = q[0] === ImageType.transparent ? 0 : 1
+    const q3 = q[3].type === ImageType.transparent ? 0 : 1
+    const q2 = q[2].type === ImageType.transparent ? 0 : 1
+    const q1 = q[1].type === ImageType.transparent ? 0 : 1
+    const q0 = q[0].type === ImageType.transparent ? 0 : 1
     const index = q3 * 8 + q2 * 4 + q1 * 2 + q0 * 1
     return symbolMap[index] || ' '
 }
@@ -69,54 +118,15 @@ export const getImageInfo = async (buffer: Buffer): Promise<ImageInfo> => {
 
     if (channels < 3) {
         throw new Error('Unsupported number of channels')
-    } else if (channels === 3) {
-        return {
-            fullImage: ImageType.solid,
-            quartals: [
-                ImageType.solid,
-                ImageType.solid,
-                ImageType.solid,
-                ImageType.solid,
-            ],
-            symbol: '█',
-        }
     }
     const quartals = [
+        checkRectagle(data, channels, width, 0, 0, width / 2, height / 2),
+        checkRectagle(data, channels, width, width / 2, 0, width, height / 2),
+        checkRectagle(data, channels, width, 0, height / 2, width / 2, height),
         checkRectagle(
             data,
-            width,
-            height,
             channels,
-            0,
-            0,
-            width / 2,
-            height / 2,
-        ),
-        checkRectagle(
-            data,
             width,
-            height,
-            channels,
-            width / 2,
-            0,
-            width,
-            height / 2,
-        ),
-        checkRectagle(
-            data,
-            width,
-            height,
-            channels,
-            0,
-            height / 2,
-            width / 2,
-            height,
-        ),
-        checkRectagle(
-            data,
-            width,
-            height,
-            channels,
             width / 2,
             height / 2,
             width,
@@ -125,12 +135,12 @@ export const getImageInfo = async (buffer: Buffer): Promise<ImageInfo> => {
     ]
     const symbol = getSymbol(quartals)
     let fullImage: ImageType
-    if (quartals.includes(ImageType.mixed)) {
-        fullImage = ImageType.mixed
-    } else if (quartals.includes(ImageType.solid)) {
+    if (quartals.every((q) => q.type === ImageType.mixed)) {
+        fullImage = ImageType.transparent
+    } else if (quartals.every((q) => q.type === ImageType.solid)) {
         fullImage = ImageType.solid
     } else {
-        fullImage = ImageType.transparent
+        fullImage = ImageType.mixed
     }
     return {
         fullImage,
@@ -159,18 +169,12 @@ export const sliceMosaic = async (
             if (compression === CompressionType.webp) {
                 t.webp({
                     quality,
-                    alphaQuality: 0,
-                    effort: 6,
+                    ...WEBP_OPTIONS,
                 })
             } else if (compression === CompressionType.png) {
                 t.png({
-                    compressionLevel: 9,
-                    effort: 10,
-                    adaptiveFiltering: true,
-                    quality: 100,
-                    progressive: true,
-                    palette: true,
-                    force: true,
+                    quality,
+                    ...PNG_OPTIONS,
                 })
             }
             tiles.push(
@@ -189,24 +193,36 @@ export const compressTile = async (
     buffer: Buffer,
     compression: CompressionType,
     quality: number,
-) => {
-    if (compression === CompressionType.webp) {
-        buffer = await sharp(buffer)
-            .webp({
-                quality,
-                alphaQuality: 0,
-                effort: 6,
-            })
-            .toBuffer()
-    } else if (compression === CompressionType.png) {
-        buffer = await sharp(buffer)
-            .png({
-                quality,
-                compressionLevel: 9,
-                effort: 10,
-                palette: true,
-            })
-            .toBuffer()
+): Promise<Buffer> => {
+    if (compression === CompressionType.none) {
+        return buffer
     }
-    return buffer
+    let b = await sharp(buffer)
+    if (compression === CompressionType.webp) {
+        b.webp({ ...WEBP_OPTIONS, quality })
+    } else if (compression === CompressionType.png) {
+        b.png({ ...PNG_OPTIONS, quality })
+    }
+    return b.toBuffer()
+}
+
+export const createSolidTile = (
+    width: number,
+    compression: CompressionType,
+    background: string,
+): Promise<Buffer> => {
+    const s = sharp({
+        create: {
+            width,
+            height: width,
+            background,
+            channels: 3,
+        },
+    })
+    if (compression === CompressionType.webp) {
+        s.webp(WEBP_OPTIONS)
+    } else {
+        s.png(PNG_OPTIONS)
+    }
+    return s.toBuffer()
 }

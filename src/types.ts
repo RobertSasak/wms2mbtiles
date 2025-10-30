@@ -4,6 +4,7 @@ export interface Options {
     tileSize?: number
     emptyTileSizes?: number[]
     skipTransparent?: boolean
+    skipMonochromatic?: boolean
     serverType?: ServerType
     verbose?: boolean
     startTile?: Tile
@@ -32,14 +33,20 @@ export type ServerType = 'wms' | 'tile' | 'arcgis'
 
 export interface ImageInfo {
     fullImage: ImageType
-    quartals: ImageType[]
+    quartals: ImageComposition[]
     symbol: string
+}
+
+export interface ImageComposition {
+    type: ImageType
+    color?: string
 }
 
 export enum ImageType {
     transparent = 'transparent',
     solid = 'solid',
     mixed = 'mixed',
+    monochromatic = 'monochromatic',
 }
 
 export enum CompressionType {

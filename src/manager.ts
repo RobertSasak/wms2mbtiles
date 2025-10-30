@@ -7,7 +7,12 @@ import { getMaxMosaicWidth, getTileChildren } from './utils.js'
 import { getWMSURL, WMSOptions } from './wms.js'
 import { ArgisOptions, getArcgisURL } from './arcgis.js'
 import { getTileURL } from './tile.js'
-import { compressTile, getImageInfo, sliceMosaic } from './image.js'
+import {
+    compressTile,
+    createSolidTile,
+    getImageInfo,
+    sliceMosaic,
+} from './image.js'
 
 const downloadUrl = async (url: string) => {
     return await got(url, {
@@ -34,6 +39,7 @@ const manager = async (
         emptyTileSizes = [],
         serverType = 'wms',
         skipTransparent = false,
+        skipMonochromatic = false,
         verbose = false,
         startTile = {
             x: 0,
@@ -78,7 +84,8 @@ const manager = async (
         skipped = 0,
         downloaded = 0,
         downloadedData = 0,
-        mosaicImages = 0
+        mosaicImages = 0,
+        monochromaticTiles = 0
     const q = queue(async ({ x, y, z }: Tile, callback) => {
         if (z > maxZoom) {
             callback()
@@ -115,24 +122,20 @@ const manager = async (
         }
 
         if (d == undefined) {
-            console.log(`Tile ${z} ${x} ${y} failed to download ${url}`)
+            console.log('Tile ', z, x, y, 'failed to download ${url}')
             callback()
             return
         }
 
         if (emptyTileSizes.includes(d.length)) {
-            console.log(
-                `Empty tile ${z} ${x} ${y} downloaded ~`,
-                d.length,
-                `bytes`,
-            )
+            console.log('E Tile', z, x, y, 'downloaded ~', d.length, 'bytes')
             callback()
             return
         }
 
         if (!skipTransparent) {
             q.unshift(getTileChildren({ x, y, z }))
-            console.log(`Tile `, z, x, y, ` downloaded ~`, d.length, `bytes`)
+            console.log('Tile', z, x, y, 'downloaded ~', d.length, 'bytes')
             callback()
             return
         }
@@ -141,7 +144,8 @@ const manager = async (
 
         if (!cached) {
             console.log(
-                `${symbol} Tile `,
+                symbol,
+                'Tile',
                 z,
                 x,
                 y,
@@ -150,15 +154,7 @@ const manager = async (
                 'bytes',
             )
         } else if (verbose) {
-            console.log(
-                `${symbol} Tile`,
-                z,
-                x,
-                y,
-                'cached ~',
-                d.length,
-                'bytes',
-            )
+            console.log(symbol, 'Tile', z, x, y, 'cached ~', d.length, 'bytes')
         }
 
         if (mosaicDownload && fullImage === ImageType.solid && z < maxZoom) {
@@ -206,11 +202,10 @@ const manager = async (
                         compression,
                         quality,
                     )
-                    for (let { tile, dx, dy } of tiles) {
-                        mosaicImages++
+                    const parallel = tiles.map(async ({ tile, dx, dy }) => {
                         if (verbose) {
                             console.log(
-                                `- mosaic tile`,
+                                '- mosaic tile',
                                 mz,
                                 mx + dx,
                                 my + dy,
@@ -219,17 +214,38 @@ const manager = async (
                                 'bytes',
                             )
                         }
+                        mosaicImages++
                         await db.put(mz, mx + dx, my + dy, tile)
-                    }
+                    })
+                    await Promise.all(parallel)
                     await db._commit()
                 }
             }
         }
 
         const children = getTileChildren({ x, y, z })
-        for (let i = 3; i >= 0; i--) {
-            if (quartals[i] !== ImageType.transparent) {
-                q.unshift(children[i])
+        if (z <= maxZoom) {
+            let mustCommit = false
+            const parallel = children.map(async (c, i) => {
+                const { type, color } = quartals[i]
+                if (skipMonochromatic && color) {
+                    mustCommit = true
+                    monochromaticTiles++
+                    const { z, x, y } = c
+                    const solidImage = await createSolidTile(
+                        tileSize,
+                        compression,
+                        color,
+                    )
+                    await db.put(z, x, y, solidImage)
+                }
+                if (type === ImageType.mixed || type === ImageType.solid) {
+                    q.unshift(c)
+                }
+            })
+            await Promise.all(parallel)
+            if (mustCommit) {
+                db._commit()
             }
         }
 
@@ -244,8 +260,11 @@ const manager = async (
     console.log('Total tiles:', total)
     if (mosaicDownload) {
         console.log('Mosaic tiles:', mosaicImages)
-        console.log('Skipped tiles:', skipped)
     }
+    if (skipMonochromatic) {
+        console.log('Monochromatic tiles:', monochromaticTiles)
+    }
+    console.log('Skipped tiles:', skipped)
 }
 
 export default manager
