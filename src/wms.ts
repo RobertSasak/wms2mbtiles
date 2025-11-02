@@ -1,6 +1,6 @@
 // https://github.com/mapbox/whoots-js
 
-import { getTileBBox } from './utils.js'
+import { getTileBBox } from './epsg3857.js'
 
 export interface WMSOptions {
     format?: string
@@ -12,6 +12,7 @@ export interface WMSOptions {
     width?: number
     height?: number
     transparent?: boolean
+    styles?: string
 }
 
 export const getWMSURL = (
@@ -30,6 +31,7 @@ export const getWMSURL = (
         width = 512,
         height = 512,
         transparent = true,
+        styles = '',
     }: WMSOptions,
 ): string => {
     const url =
@@ -46,6 +48,7 @@ export const getWMSURL = (
             'height=' + height,
             'layers=' + layer,
             'transparent=' + transparent,
+            'styles=' + styles,
         ].join('&')
 
     return url

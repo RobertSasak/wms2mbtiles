@@ -1,4 +1,4 @@
-import { getTileBBox } from './utils.js'
+import { getTileBBox } from './epsg3857.js'
 
 export interface ArgisOptions {
     format?: string
