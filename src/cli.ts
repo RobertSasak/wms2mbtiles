@@ -32,7 +32,7 @@ const cli = meow(
     --format             image format, default image/png
     --dpi                number, default omit
     --mapResolution      number, default omit
-    --formatOptions      string, default ''
+    --formatOptions      string, default omit
     Tile compression
     --compression        compress tiles, options: none, png, webp. Need to be 
                          provided when mosaicDownload is used, default none
@@ -130,7 +130,6 @@ const cli = meow(
             },
             formatOptions: {
                 type: 'string',
-                default: '',
             },
             format: {
                 type: 'string',

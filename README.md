@@ -57,7 +57,7 @@ Download maps from WMS and save it into mbtiles.
     --format             image format, default image/png
     --dpi                number, default omit
     --mapResolution      number, default omit
-    --formatOptions      string, default ''
+    --formatOptions      string, default omit
     Tile compression
     --compression        compress tiles, options: none, png, webp. Need to be
                          provided when mosaicDownload is used, default none
