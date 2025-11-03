@@ -48,13 +48,16 @@ Download maps from WMS and save it into mbtiles.
     -z                   zoom, default 0
     -x                   x, default 0
     -y                   y, default 0
-    WMS/Arcgis server options
+    WMS server options
     --mosaicDownload     faster downloading of of tiles by combining multiple
                          tiles into one request, default false
     --maxWidth           when mosaicDownload is set, maximal width of the
                          mosaic in pixels, default 2048
     --transparent        request transparent tiles, default true
     --format             image format, default image/png
+    --dpi                number, default omit
+    --mapResolution      number, default omit
+    --formatOptions      string, default ''
     Tile compression
     --compression        compress tiles, options: none, png, webp. Need to be
                          provided when mosaicDownload is used, default none

@@ -13,6 +13,9 @@ export interface Options {
     maxWidth?: number
     transparent?: boolean
     format?: string
+    dpi?: number
+    mapResolution?: number
+    formatOptions?: string
     // compression options
     compression?: CompressionType
     quality?: number

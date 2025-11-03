@@ -13,6 +13,9 @@ export interface WMSOptions {
     height?: number
     transparent?: boolean
     styles?: string
+    dpi?: number
+    mapResolution?: number
+    formatOptions?: string
 }
 
 export const getWMSURL = (
@@ -32,24 +35,33 @@ export const getWMSURL = (
         height = 512,
         transparent = true,
         styles = '',
+        dpi,
+        mapResolution,
+        formatOptions,
     }: WMSOptions,
 ): string => {
     const url =
         baseUrl +
         '?' +
         [
-            'bbox=' + getTileBBox(x, y, z, tileSize),
-            'format=' + format,
-            'service=' + service,
-            'version=' + version,
-            'request=' + request,
-            'srs=' + srs,
-            'width=' + width,
-            'height=' + height,
-            'layers=' + layer,
-            'transparent=' + transparent,
-            'styles=' + styles,
-        ].join('&')
+            ['bbox', getTileBBox(x, y, z, tileSize)],
+            ['format', format],
+            ['service', service],
+            ['version', version],
+            ['request', request],
+            ['srs', srs],
+            ['width', width],
+            ['height', height],
+            ['layers', layer],
+            ['transparent', transparent],
+            ['styles', styles],
+            ['dpi', dpi],
+            ['map_resolution', mapResolution],
+            ['format_options', formatOptions],
+        ]
+            .filter(([_, v]) => v !== undefined)
+            .map(([k, v]) => k + '=' + v)
+            .join('&')
 
     return url
 }

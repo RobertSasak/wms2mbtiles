@@ -30,6 +30,9 @@ const cli = meow(
                          mosaic in pixels, default 2048
     --transparent        request transparent tiles, default true
     --format             image format, default image/png
+    --dpi                number, default omit
+    --mapResolution      number, default omit
+    --formatOptions      string, default ''
     Tile compression
     --compression        compress tiles, options: none, png, webp. Need to be 
                          provided when mosaicDownload is used, default none
@@ -118,6 +121,16 @@ const cli = meow(
             transparent: {
                 type: 'boolean',
                 default: true,
+            },
+            dpi: {
+                type: 'number',
+            },
+            mapResolution: {
+                type: 'number',
+            },
+            formatOptions: {
+                type: 'string',
+                default: '',
             },
             format: {
                 type: 'string',

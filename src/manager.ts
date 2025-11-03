@@ -51,6 +51,9 @@ const manager = async (
         maxWidth = 2048,
         transparent = true,
         format = 'image/png',
+        dpi,
+        mapResolution,
+        formatOptions,
         // compression
         compression = CompressionType.none,
         quality = 80,
@@ -62,6 +65,9 @@ const manager = async (
         height: tileSize,
         transparent,
         format,
+        dpi,
+        mapResolution,
+        formatOptions,
     }
     const arcgisOptions: ArgisOptions = {
         tileSize,
