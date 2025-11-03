@@ -128,7 +128,7 @@ const manager = async (
         }
 
         if (d == undefined) {
-            console.log('Tile ', z, x, y, 'failed to download ${url}')
+            console.log('Tile ', z, x, y, 'failed to download', url)
             callback()
             return
         }
