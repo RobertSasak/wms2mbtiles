@@ -1,6 +1,6 @@
 {
     "name": "wms2mbtiles",
-    "version": "4.1.1",
+    "version": "4.1.2",
     "description": "Download maps from WMS and save it into mbtiles.",
     "exports": "./dist/index.js",
     "type": "module",
