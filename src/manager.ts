@@ -230,7 +230,7 @@ const manager = async (
         }
 
         const children = getTileChildren({ x, y, z })
-        if (z <= maxZoom) {
+        if (z < maxZoom) {
             let mustCommit = false
             const parallel = children.map(async (c, i) => {
                 const { type, color } = quartals[i]
@@ -251,7 +251,7 @@ const manager = async (
             })
             await Promise.all(parallel)
             if (mustCommit) {
-                db._commit()
+                await db._commit()
             }
         }
 
