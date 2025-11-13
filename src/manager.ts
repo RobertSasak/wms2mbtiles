@@ -9,12 +9,13 @@ import { ArgisOptions, getArcgisURL } from './arcgis.js'
 import { getTileURL } from './tile.js'
 import {
     compressTile,
+    createMosaic,
     createSolidTile,
     getImageInfo,
     sliceMosaic,
 } from './image.js'
 
-const downloadUrl = async (url: string) => {
+const downloadUrl = async (url: string): Promise<Buffer | undefined> => {
     return await got(url, {
         resolveBodyOnly: true,
         responseType: 'buffer',
@@ -23,6 +24,7 @@ const downloadUrl = async (url: string) => {
             socket: 60000,
         },
     }).catch((error) => {
+        console.log(url)
         console.log('Download error:', error.message)
         return undefined
     })
@@ -36,6 +38,7 @@ const manager = async (
         maxZoom = 3,
         concurrency = 2,
         tileSize = 512,
+        upscale = false,
         emptyTileSizes = [],
         serverType = 'wms',
         skipTransparent = false,
@@ -108,8 +111,27 @@ const manager = async (
             })
             .catch(async () => {
                 cached = false
-                url = getUrl(x, y, z)
-                const f = await downloadUrl(url)
+                let f: Buffer | undefined
+                if (upscale) {
+                    const buffers = getTileChildren({ x, y, z }).map(
+                        ({ z, x, y }) => downloadUrl(getUrl(x, y, z)),
+                    )
+                    const quads = (await Promise.all(buffers)) as [
+                        Buffer | undefined,
+                        Buffer | undefined,
+                        Buffer | undefined,
+                        Buffer | undefined,
+                    ]
+                    f = await createMosaic(
+                        quads,
+                        tileSize,
+                        compression,
+                        quality,
+                    )
+                } else {
+                    url = getUrl(x, y, z)
+                    f = await downloadUrl(url)
+                }
                 if (f) {
                     downloaded++
                     downloadedData += f.length
@@ -239,7 +261,7 @@ const manager = async (
                     monochromaticTiles++
                     const { z, x, y } = c
                     const solidImage = await createSolidTile(
-                        tileSize,
+                        upscale ? tileSize * 2 : tileSize,
                         compression,
                         color,
                     )

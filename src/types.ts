@@ -2,6 +2,7 @@ export interface Options {
     maxZoom?: number
     concurrency?: number
     tileSize?: number
+    upscale?: boolean
     emptyTileSizes?: number[]
     skipTransparent?: boolean
     skipMonochromatic?: boolean

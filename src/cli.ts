@@ -13,6 +13,9 @@ const cli = meow(
     --maxZoom, -m        maximal zoom to download, default 3
     --concurrency, -c    number of concurrent downloads, defaukt 2
     --tileSize, -t       tile size in pixels, default 512
+    --upscale            combine 4 tiles into one. Useful when dealing with 256x256px
+                         tiles and producing 512x512px. Make sense only with
+                         serverType tile, default false
     --emptyTileSizes, -e size of empty tile in bytes, default 334
                          use it multiple times to set multiple sizes
     --serverType, -s     server type, wms or tile, default wms
@@ -73,6 +76,9 @@ const cli = meow(
             tileSize: {
                 type: 'number',
                 shortFlag: 't',
+            },
+            upscale: {
+                type: 'boolean',
             },
             emptyTileSizes: {
                 type: 'number',
@@ -155,6 +161,8 @@ if (cli.input.length === 0) {
     )
 } else if (cli.flags.mosaicDownload && cli.flags.serverType === 'tile') {
     console.error('Mosaic download works only with server type WMS or Arcgis')
+} else if (cli.flags.upscale && cli.flags.serverType !== 'tile') {
+    console.error('Upscaling tiles make sense only with serverType tile')
 } else {
     const serverType = cli.flags.serverType as ServerType
     const compression = cli.flags.compression as CompressionType

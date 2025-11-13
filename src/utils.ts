@@ -1,6 +1,10 @@
 import { Tile } from './types.js'
 
-export const getTileChildren = ({ x, y, z }: Tile) => {
+export const getTileChildren = ({
+    x,
+    y,
+    z,
+}: Tile): [Tile, Tile, Tile, Tile] => {
     const xx = x * 2
     const yy = y * 2
     const zz = z + 1

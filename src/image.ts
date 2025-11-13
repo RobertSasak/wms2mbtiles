@@ -1,4 +1,4 @@
-import sharp, { PngOptions, WebpOptions } from 'sharp'
+import sharp, { PngOptions, Sharp, WebpOptions } from 'sharp'
 import {
     CompressionType,
     ImageComposition,
@@ -197,13 +197,8 @@ export const compressTile = async (
     if (compression === CompressionType.none) {
         return buffer
     }
-    let b = await sharp(buffer)
-    if (compression === CompressionType.webp) {
-        b.webp({ ...WEBP_OPTIONS, quality })
-    } else if (compression === CompressionType.png) {
-        b.png({ ...PNG_OPTIONS, quality })
-    }
-    return b.toBuffer()
+    let s = await sharp(buffer)
+    return compress(s, compression, quality)
 }
 
 export const createSolidTile = (
@@ -219,10 +214,44 @@ export const createSolidTile = (
             channels: 3,
         },
     })
+    return compress(s, compression, 1)
+}
+
+export const createMosaic = async (
+    quads: [
+        Buffer | undefined,
+        Buffer | undefined,
+        Buffer | undefined,
+        Buffer | undefined,
+    ],
+    tileSize: number,
+    compression: CompressionType,
+    quality: number,
+): Promise<Buffer> => {
+    const compositeImages: sharp.OverlayOptions[] = [
+        { input: quads[0], top: 0, left: 0 },
+        { input: quads[1], top: 0, left: tileSize },
+        { input: quads[2], top: tileSize, left: 0 },
+        { input: quads[3], top: tileSize, left: tileSize },
+    ].filter((a) => a.input)
+
+    const s = await sharp({
+        create: {
+            width: tileSize * 2,
+            height: tileSize * 2,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+    }).composite(compositeImages)
+
+    return compress(s, compression, quality)
+}
+
+const compress = (s: Sharp, compression: CompressionType, quality: number) => {
     if (compression === CompressionType.webp) {
-        s.webp(WEBP_OPTIONS)
-    } else {
-        s.png(PNG_OPTIONS)
+        s.webp({ ...WEBP_OPTIONS, quality })
+    } else if (compression === CompressionType.png) {
+        s.png({ ...PNG_OPTIONS, quality })
     }
     return s.toBuffer()
 }
