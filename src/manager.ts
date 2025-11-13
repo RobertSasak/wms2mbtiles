@@ -256,10 +256,14 @@ const manager = async (
             let mustCommit = false
             const parallel = children.map(async (c, i) => {
                 const { type, color } = quartals[i]
+                const { z, x, y } = c
+                try {
+                    await db.get(z, x, y)
+                    return
+                } catch (_e) {}
                 if (skipMonochromatic && color) {
                     mustCommit = true
                     monochromaticTiles++
-                    const { z, x, y } = c
                     const solidImage = await createSolidTile(
                         upscale ? tileSize * 2 : tileSize,
                         compression,
