@@ -267,7 +267,7 @@ const manager = async (
                     )
                     await db.put(z, x, y, solidImage)
                 }
-                if (type === ImageType.mixed || type === ImageType.solid) {
+                if (type !== ImageType.transparent) {
                     q.unshift(c)
                 }
             })
