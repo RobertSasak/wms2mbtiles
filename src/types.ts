@@ -5,8 +5,8 @@ export interface Options {
     upscale?: boolean
     emptyTileSizes?: number[]
     skipTransparent?: boolean
-    skipMonochromatic?: boolean
-    monoThreshold?: number
+    skipSolid?: boolean
+    solidThreshold?: number
     serverType?: ServerType
     verbose?: boolean
     startTile?: Tile
@@ -49,9 +49,9 @@ export interface ImageComposition {
 
 export enum ImageType {
     transparent = 'transparent',
-    solid = 'solid',
+    opaque = 'opaque',
     mixed = 'mixed',
-    monochromatic = 'monochromatic',
+    solid = 'solid',
 }
 
 export enum CompressionType {

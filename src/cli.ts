@@ -20,11 +20,11 @@ const cli = meow(
                          use it multiple times to set multiple sizes
     --serverType, -s     server type, wms or tile, default wms
     --skipTransparent    skip tiles that are fully transparent, default false
-    --skipMonochromatic  skip tiles contain only single color, default false
-    --monoThreshold      configuration for skipMonochromatic. It helps ignoring
+    --skipSolid          skip tiles containing only single color, default false
+    --solidThreshold     configuration for skipSolid. It helps ignoring
                          noise in empty jpeg tiles. Tiles with colors of
                          standard deviation less than this are considered
-                         monochromatic, default 0
+                         solid, default 0
     --verbose, -v        verbose output, default false
     Coordinates of a starting tile
     -z                   zoom, default 0
@@ -99,9 +99,13 @@ const cli = meow(
                 type: 'boolean',
                 default: false,
             },
-            skipMonochromatic: {
+            skipSolid: {
                 type: 'boolean',
                 default: false,
+            },
+            solidThreshold: {
+                type: 'number',
+                default: 0,
             },
             verbose: {
                 type: 'boolean',
@@ -153,10 +157,6 @@ const cli = meow(
             quality: {
                 type: 'number',
                 default: 80,
-            },
-            monoThreshold: {
-                type: 'number',
-                default: 0,
             },
         },
     },

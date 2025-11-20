@@ -40,17 +40,17 @@ const checkRectagle = async (
             }
         }
     }
-    let isMonochromatic = true
+    let isSolid = true
     for (let i = 0; i < channels.length; i++) {
         const { stdev } = channels[i]
         if (stdev > thresholdStdDev) {
-            isMonochromatic = false
+            isSolid = false
             break
         }
     }
-    if (isMonochromatic) {
+    if (isSolid) {
         return {
-            type: ImageType.monochromatic,
+            type: ImageType.solid,
             color:
                 '#' +
                 dominant.r.toString(16).padStart(2, '0') +
@@ -59,7 +59,7 @@ const checkRectagle = async (
         }
     }
     return {
-        type: ImageType.solid,
+        type: ImageType.opaque,
     }
 }
 
@@ -94,7 +94,7 @@ const getSymbol = (quadrants: ImageComposition[]) => {
 
 export const getImageInfo = async (
     buffer: Buffer,
-    monoThreshold: number = 0,
+    solidThreshold: number = 0,
 ): Promise<ImageInfo> => {
     const s = sharp(buffer)
     const { width } = await s.metadata()
@@ -107,23 +107,21 @@ export const getImageInfo = async (
     ]
     const quadrants = await Promise.all(
         zones.map(([top, left]) =>
-            checkRectagle(s, top, left, half, monoThreshold),
+            checkRectagle(s, top, left, half, solidThreshold),
         ),
     )
     const symbol = getSymbol(quadrants)
     let fullImage: ImageType
     if (quadrants.every((q) => q.type === ImageType.transparent)) {
         fullImage = ImageType.transparent
-    } else if (quadrants.every((q) => q.type === ImageType.monochromatic)) {
-        fullImage = ImageType.monochromatic
+    } else if (quadrants.every((q) => q.type === ImageType.solid)) {
+        fullImage = ImageType.solid
     } else if (
         quadrants.every(
-            (q) =>
-                q.type === ImageType.solid ||
-                q.type === ImageType.monochromatic,
+            (q) => q.type === ImageType.opaque || q.type === ImageType.solid,
         )
     ) {
-        fullImage = ImageType.solid
+        fullImage = ImageType.opaque
     } else {
         fullImage = ImageType.mixed
     }

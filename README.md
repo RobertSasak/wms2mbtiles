@@ -6,7 +6,7 @@ Download maps from WMS server and save it into mbtiles. Instead of selecting an 
 
 -   skip (empty) tiles by specifing tile size in bytes and it's children
 -   skip transparent tiles and it's children
--   skip monochromatic(images with single background color) tiles and it's children
+-   skip solid(images with single background color) tiles and it's children
 -   for WMS and Arcgic, speed up by requesting one single mosaic and then slicing it into tiles.
 -   compress tiles on the fly to WEBP or PNG
 
@@ -45,11 +45,11 @@ Download maps from WMS and save it into mbtiles.
                          use it multiple times to set multiple sizes
     --serverType, -s     server type, wms or tile, default wms
     --skipTransparent    skip tiles that are fully transparent, default false
-    --skipMonochromatic  skip tiles contain only single color, default false
-    --monoThreshold      configuration for skipMonochromatic. It helps ignoring
+    --skipSolid          skip tiles containing only single color, default false
+    --solidThreshold     configuration for skipSolid. It helps ignoring
                          noise in empty jpeg tiles. Tiles with colors of
                          standard deviation less than this are considered
-                         monochromatic, default 0
+                         solid, default 0
     --verbose, -v        verbose output, default false
     Coordinates of a starting tile
     -z                   zoom, default 0

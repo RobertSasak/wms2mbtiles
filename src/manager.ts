@@ -43,8 +43,8 @@ const manager = async (
         emptyTileSizes = [],
         serverType = 'wms',
         skipTransparent = false,
-        skipMonochromatic = false,
-        monoThreshold = 0,
+        skipSolid = false,
+        solidThreshold = 0,
         verbose = false,
         startTile = {
             x: 0,
@@ -96,7 +96,7 @@ const manager = async (
         downloaded = 0,
         downloadedData = 0,
         mosaicImages = 0,
-        monochromaticTiles = 0
+        solidTiles = 0
     const q = queue(async ({ x, y, z }: Tile, callback) => {
         if (z > maxZoom) {
             callback()
@@ -181,14 +181,14 @@ const manager = async (
 
         const { fullImage, quartals, symbol } = await getImageInfo(
             d,
-            monoThreshold,
+            solidThreshold,
         )
 
         if (!cached) {
             console.log(
                 symbol,
                 terminalLink('Tile', url ?? '', { fallback: () => 'Tile' }),
-                fullImage,
+                fullImage.padEnd(11),
                 z,
                 x,
                 y,
@@ -200,7 +200,7 @@ const manager = async (
             console.log(symbol, 'Tile', z, x, y, 'cached ~', d.length, 'bytes')
         }
 
-        if (mosaicDownload && fullImage === ImageType.solid && z < maxZoom) {
+        if (mosaicDownload && fullImage === ImageType.opaque && z < maxZoom) {
             const {
                 z: mz,
                 x: mx,
@@ -272,9 +272,9 @@ const manager = async (
             const parallel = children.map(async (c, i) => {
                 const { type, color } = quartals[i]
                 const { z, x, y } = c
-                if (skipMonochromatic && color) {
+                if (skipSolid && color) {
                     mustCommit = true
-                    monochromaticTiles++
+                    solidTiles++
                     const exists = await db
                         .get(z, x, y)
                         .then(() => true)
@@ -310,8 +310,8 @@ const manager = async (
     if (mosaicDownload) {
         console.log('Mosaic tiles:', mosaicImages)
     }
-    if (skipMonochromatic) {
-        console.log('Monochromatic tiles:', monochromaticTiles)
+    if (skipSolid) {
+        console.log('Solid tiles:', solidTiles)
     }
     console.log('Skipped tiles:', skipped)
 }
