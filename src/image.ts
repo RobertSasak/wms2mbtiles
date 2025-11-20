@@ -33,33 +33,38 @@ const checkRectagle = async (
         .toBuffer()
     const { isOpaque, channels, dominant } = await sharp(raw).stats()
 
-    if (!isOpaque && channels.length === 4) {
-        if (channels[3].max === 0) {
-            return {
-                type: ImageType.transparent,
+    if (isOpaque) {
+        let isSolid = true
+        for (let i = 0; i < channels.length; i++) {
+            const { stdev } = channels[i]
+            if (stdev > thresholdStdDev) {
+                isSolid = false
+                break
             }
         }
-    }
-    let isSolid = true
-    for (let i = 0; i < channels.length; i++) {
-        const { stdev } = channels[i]
-        if (stdev > thresholdStdDev) {
-            isSolid = false
-            break
+        if (isSolid) {
+            return {
+                type: ImageType.solid,
+                color:
+                    '#' +
+                    dominant.r.toString(16).padStart(2, '0') +
+                    dominant.g.toString(16).padStart(2, '0') +
+                    dominant.b.toString(16).padStart(2, '0'),
+            }
         }
-    }
-    if (isSolid) {
         return {
-            type: ImageType.solid,
-            color:
-                '#' +
-                dominant.r.toString(16).padStart(2, '0') +
-                dominant.g.toString(16).padStart(2, '0') +
-                dominant.b.toString(16).padStart(2, '0'),
+            type: ImageType.opaque,
         }
     }
+
+    if (channels[3]?.max === 0) {
+        return {
+            type: ImageType.transparent,
+        }
+    }
+
     return {
-        type: ImageType.opaque,
+        type: ImageType.mixed,
     }
 }
 
