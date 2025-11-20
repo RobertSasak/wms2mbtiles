@@ -114,7 +114,15 @@ export const getImageInfo = async (
     let fullImage: ImageType
     if (quadrants.every((q) => q.type === ImageType.transparent)) {
         fullImage = ImageType.transparent
-    } else if (quadrants.every((q) => q.type === ImageType.solid)) {
+    } else if (quadrants.every((q) => q.type === ImageType.monochromatic)) {
+        fullImage = ImageType.monochromatic
+    } else if (
+        quadrants.every(
+            (q) =>
+                q.type === ImageType.solid ||
+                q.type === ImageType.monochromatic,
+        )
+    ) {
         fullImage = ImageType.solid
     } else {
         fullImage = ImageType.mixed
