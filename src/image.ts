@@ -1,4 +1,4 @@
-import sharp, { PngOptions, Sharp, WebpOptions } from 'sharp'
+import sharp, { Color, PngOptions, Sharp, WebpOptions } from 'sharp'
 import {
     CompressionType,
     ImageComposition,
@@ -25,7 +25,7 @@ const checkRectagle = async (
     top: number,
     left: number,
     width: number,
-    thresholdStdDev: number,
+    threshold: number,
 ): Promise<ImageComposition> => {
     const raw = await s
         .clone()
@@ -37,7 +37,7 @@ const checkRectagle = async (
         let isSolid = true
         for (let i = 0; i < channels.length; i++) {
             const { stdev } = channels[i]
-            if (stdev > thresholdStdDev) {
+            if (stdev > threshold) {
                 isSolid = false
                 break
             }
@@ -45,11 +45,7 @@ const checkRectagle = async (
         if (isSolid) {
             return {
                 type: ImageType.solid,
-                color:
-                    '#' +
-                    dominant.r.toString(16).padStart(2, '0') +
-                    dominant.g.toString(16).padStart(2, '0') +
-                    dominant.b.toString(16).padStart(2, '0'),
+                color: dominant,
             }
         }
         return {
@@ -177,35 +173,17 @@ export const sliceMosaic = async (
     return Promise.all(tiles)
 }
 
-export const compressTile = async (
-    buffer: Buffer,
-    compression: CompressionType,
-    quality: number,
-): Promise<Buffer> => {
-    if (compression === CompressionType.none) {
-        return buffer
-    }
-    let s = await sharp(buffer)
-    return compress(s, compression, quality)
-}
-
-export const createSolidTile = (
-    width: number,
-    compression: CompressionType,
-    background: string,
-): Promise<Buffer> => {
-    const s = sharp({
+export const createSolidTile = (width: number, background: Color): Sharp =>
+    sharp({
         create: {
             width,
             height: width,
             background,
-            channels: 3,
+            channels: 4,
         },
     })
-    return compress(s, compression, 1, false)
-}
 
-export const createMosaic = async (
+export const createMosaic = (
     quads: [
         Buffer | undefined,
         Buffer | undefined,
@@ -213,9 +191,7 @@ export const createMosaic = async (
         Buffer | undefined,
     ],
     tileSize: number,
-    compression: CompressionType,
-    quality: number,
-): Promise<Buffer> => {
+): Sharp => {
     const compositeImages: sharp.OverlayOptions[] = [
         { input: quads[0], top: 0, left: 0 },
         { input: quads[1], top: 0, left: tileSize },
@@ -223,7 +199,7 @@ export const createMosaic = async (
         { input: quads[3], top: tileSize, left: tileSize },
     ].filter((a) => a.input)
 
-    const s = await sharp({
+    return sharp({
         create: {
             width: tileSize * 2,
             height: tileSize * 2,
@@ -231,16 +207,18 @@ export const createMosaic = async (
             background: { r: 0, g: 0, b: 0, alpha: 0 },
         },
     }).composite(compositeImages)
-
-    return compress(s, compression, quality)
 }
 
-const compress = (
-    s: Sharp,
+export const compressTile = async (
+    input: Buffer | Sharp,
     compression: CompressionType,
     quality: number,
-    lossless: boolean = false,
-) => {
+    lossless: boolean = true,
+): Promise<Buffer> => {
+    if (Buffer.isBuffer(input) && compression === CompressionType.none) {
+        return input
+    }
+    const s: Sharp = Buffer.isBuffer(input) ? sharp(input) : input
     if (compression === CompressionType.webp) {
         s.webp({ ...WEBP_OPTIONS, quality, lossless })
     } else if (compression === CompressionType.png) {

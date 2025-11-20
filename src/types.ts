@@ -5,6 +5,7 @@ export interface Options {
     upscale?: boolean
     emptyTileSizes?: number[]
     skipTransparent?: boolean
+    skipMixed?: number
     skipSolid?: boolean
     solidThreshold?: number
     serverType?: ServerType
@@ -42,9 +43,16 @@ export interface ImageInfo {
     symbol: string
 }
 
+export interface Color {
+    r: number
+    g: number
+    b: number
+    a?: number
+}
+
 export interface ImageComposition {
     type: ImageType
-    color?: string
+    color?: Color
 }
 
 export enum ImageType {

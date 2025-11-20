@@ -20,6 +20,9 @@ const cli = meow(
                          use it multiple times to set multiple sizes
     --serverType, -s     server type, wms or tile, default wms
     --skipTransparent    skip tiles that are fully transparent, default false
+    --skipMixed          skip tiles that contain both transparent and opaque parts
+                         from given zoom level. Useful to skip all edge tiles.
+                         default 30
     --skipSolid          skip tiles containing only single color, default false
     --solidThreshold     configuration for skipSolid. It helps ignoring
                          noise in empty jpeg tiles. Tiles with colors of
@@ -98,6 +101,9 @@ const cli = meow(
             skipTransparent: {
                 type: 'boolean',
                 default: false,
+            },
+            skipMixed: {
+                type: 'number',
             },
             skipSolid: {
                 type: 'boolean',

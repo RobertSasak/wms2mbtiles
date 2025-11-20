@@ -45,6 +45,7 @@ const manager = async (
         skipTransparent = false,
         skipSolid = false,
         solidThreshold = 0,
+        skipMixed = 30,
         verbose = false,
         startTile = {
             x: 0,
@@ -96,7 +97,8 @@ const manager = async (
         downloaded = 0,
         downloadedData = 0,
         mosaicImages = 0,
-        solidTiles = 0
+        solidTiles = 0,
+        mixedSkipped = 0
     const q = queue(async ({ x, y, z }: Tile, callback) => {
         if (z > maxZoom) {
             callback()
@@ -105,6 +107,7 @@ const manager = async (
         total++
         let url
         let cached = true
+        let downloadedSize
         const d = await db
             .get(z, x, y)
             .then((d) => {
@@ -127,31 +130,44 @@ const manager = async (
                         Buffer | undefined,
                     ]
                     downloaded += 4
-                    downloadedData += quads.reduce(
+                    downloadedSize = quads.reduce(
                         (p, v) => p + (v?.length || 0),
                         0,
                     )
-
-                    f = await createMosaic(
-                        quads,
-                        tileSize,
-                        compression,
-                        quality,
-                    )
-                    await db.put(z, x, y, f)
+                    downloadedData += downloadedSize
+                    if (quads.some((a) => a === undefined)) {
+                        f = undefined
+                    }
+                    const mosaic = createMosaic(quads, tileSize)
+                    f = await compressTile(mosaic, compression, quality)
                 } else {
                     url = getUrl(x, y, z)
                     f = await downloadUrl(url)
                     if (f) {
                         downloaded++
-                        downloadedData += f.length
-                        await db.put(
-                            z,
-                            x,
-                            y,
-                            await compressTile(f, compression, quality),
-                        )
+                        downloadedSize = f.length
+                        downloadedData += downloadedSize
+
+                        if (z >= skipMixed) {
+                            const { fullImage } = await getImageInfo(
+                                f,
+                                solidThreshold,
+                            )
+                            if (fullImage === ImageType.mixed) {
+                                mixedSkipped++
+                                const solid = createSolidTile(
+                                    tileSize,
+                                    '#00000000',
+                                )
+                                f = await compressTile(solid, compression, 1)
+                            }
+                        } else {
+                            f = await compressTile(f, compression, quality)
+                        }
                     }
+                }
+                if (f) {
+                    await db.put(z, x, y, f)
                 }
                 return f
             })
@@ -194,6 +210,8 @@ const manager = async (
                 y,
                 'downloaded ~',
                 d.length,
+                'bytes compressed ~',
+                downloadedSize,
                 'bytes',
             )
         } else if (verbose) {
@@ -280,12 +298,17 @@ const manager = async (
                         .then(() => true)
                         .catch(() => false)
                     if (!exists) {
-                        const solidImage = await createSolidTile(
+                        const solidImage = createSolidTile(
                             upscale ? tileSize * 2 : tileSize,
-                            compression,
                             color,
                         )
-                        await db.put(z, x, y, solidImage)
+                        const compressed = await compressTile(
+                            solidImage,
+                            compression,
+                            100,
+                            false,
+                        )
+                        await db.put(z, x, y, compressed)
                     }
                 }
                 if (type !== ImageType.transparent) {
@@ -312,6 +335,9 @@ const manager = async (
     }
     if (skipSolid) {
         console.log('Solid tiles:', solidTiles)
+    }
+    if (skipMixed) {
+        console.log('Skipped mixed tiles:', mixedSkipped)
     }
     console.log('Skipped tiles:', skipped)
 }
