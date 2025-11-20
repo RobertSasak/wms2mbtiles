@@ -113,39 +113,48 @@ const manager = async (
                 cached = false
                 let f: Buffer | undefined
                 if (upscale) {
-                    const buffers = getTileChildren({ x, y, z }).map(
-                        ({ z, x, y }) => downloadUrl(getUrl(x, y, z)),
+                    const urls = getTileChildren({ x, y, z }).map(
+                        ({ z, x, y }) => getUrl(x, y, z),
                     )
+                    url = urls.join('\n')
+                    const buffers = urls.map((u) => downloadUrl(u))
                     const quads = (await Promise.all(buffers)) as [
                         Buffer | undefined,
                         Buffer | undefined,
                         Buffer | undefined,
                         Buffer | undefined,
                     ]
+                    downloaded += 4
+                    downloadedData += quads.reduce(
+                        (p, v) => p + (v?.length || 0),
+                        0,
+                    )
+
                     f = await createMosaic(
                         quads,
                         tileSize,
                         compression,
                         quality,
                     )
+                    await db.put(z, x, y, f)
                 } else {
                     url = getUrl(x, y, z)
                     f = await downloadUrl(url)
-                }
-                if (f) {
-                    downloaded++
-                    downloadedData += f.length
-                    await db.put(
-                        z,
-                        x,
-                        y,
-                        await compressTile(f, compression, quality),
-                    )
+                    if (f) {
+                        downloaded++
+                        downloadedData += f.length
+                        await db.put(
+                            z,
+                            x,
+                            y,
+                            await compressTile(f, compression, quality),
+                        )
+                    }
                 }
                 return f
             })
 
-        if (verbose && !cached) {
+        if (verbose && !cached && url) {
             console.log(url)
         }
 
@@ -174,6 +183,7 @@ const manager = async (
             console.log(
                 symbol,
                 'Tile',
+                fullImage,
                 z,
                 x,
                 y,
@@ -257,19 +267,21 @@ const manager = async (
             const parallel = children.map(async (c, i) => {
                 const { type, color } = quartals[i]
                 const { z, x, y } = c
-                try {
-                    await db.get(z, x, y)
-                    return
-                } catch (_e) {}
                 if (skipMonochromatic && color) {
                     mustCommit = true
                     monochromaticTiles++
-                    const solidImage = await createSolidTile(
-                        upscale ? tileSize * 2 : tileSize,
-                        compression,
-                        color,
-                    )
-                    await db.put(z, x, y, solidImage)
+                    const exists = await db
+                        .get(z, x, y)
+                        .then(() => true)
+                        .catch(() => false)
+                    if (!exists) {
+                        const solidImage = await createSolidTile(
+                            upscale ? tileSize * 2 : tileSize,
+                            compression,
+                            color,
+                        )
+                        await db.put(z, x, y, solidImage)
+                    }
                 }
                 if (type !== ImageType.transparent) {
                     q.unshift(c)

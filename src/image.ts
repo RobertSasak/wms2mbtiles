@@ -6,6 +6,7 @@ import {
     ImageType,
 } from './types.js'
 
+const THRESHOLD_STD_DEV = 1
 const WEBP_OPTIONS: WebpOptions = {
     alphaQuality: 0,
     effort: 6,
@@ -20,63 +21,46 @@ const PNG_OPTIONS: PngOptions = {
     force: true,
 }
 
-const checkRectagle = (
-    data: Buffer<ArrayBufferLike>,
-    channels: number,
+const checkRectagle = async (
+    s: Sharp,
+    top: number,
+    left: number,
     width: number,
-    xStart: number,
-    yStart: number,
-    xEnd: number,
-    yEnd: number,
-): ImageComposition => {
-    let transparent = true
-    let solid = true
-    let firstColor: string | undefined
-    let isMonochromatic = true
+): Promise<ImageComposition> => {
+    const raw = await s
+        .clone()
+        .extract({ top, left, width, height: width })
+        .toBuffer()
+    const { isOpaque, channels, dominant } = await sharp(raw).stats()
 
-    for (let y = yStart; y < yEnd; y++) {
-        for (let x = xStart; x < xEnd; x++) {
-            const i = (y * width + x) * channels
-            const alpha = data[i + channels - 1]
-            if (channels > 3 && alpha !== 255) {
-                solid = false
-                isMonochromatic = false
-            } else {
-                transparent = false
-                const r = data[i]
-                const g = data[i + 1]
-                const b = data[i + 2]
-                const color =
-                    '#' +
-                    r.toString(16).padStart(2, '0') +
-                    g.toString(16).padStart(2, '0') +
-                    b.toString(16).padStart(2, '0')
-
-                if (!firstColor) {
-                    firstColor = color
-                } else if (color !== firstColor) {
-                    isMonochromatic = false
-                }
-            }
-
-            if (!solid && !transparent && !isMonochromatic) {
-                return {
-                    type: ImageType.mixed,
-                }
+    if (!isOpaque && channels.length === 4) {
+        if (channels[3].max === 0) {
+            return {
+                type: ImageType.transparent,
             }
         }
     }
-
-    if (transparent) {
-        return { type: ImageType.transparent }
+    let isMonochromatic = true
+    for (let i = 0; i < channels.length; i++) {
+        const { stdev } = channels[i]
+        if (stdev > THRESHOLD_STD_DEV) {
+            isMonochromatic = false
+            break
+        }
     }
     if (isMonochromatic) {
         return {
             type: ImageType.monochromatic,
-            color: firstColor,
+            color:
+                '#' +
+                dominant.r.toString(16).padStart(2, '0') +
+                dominant.g.toString(16).padStart(2, '0') +
+                dominant.b.toString(16).padStart(2, '0'),
         }
     }
-    return { type: ImageType.solid }
+    return {
+        type: ImageType.solid,
+    }
 }
 
 const symbolMap: { [key: number]: string } = {
@@ -109,42 +93,30 @@ const getSymbol = (quadrants: ImageComposition[]) => {
 }
 
 export const getImageInfo = async (buffer: Buffer): Promise<ImageInfo> => {
-    const image = sharp(buffer)
-    const { data, info } = await image
-        .raw()
-        .toBuffer({ resolveWithObject: true })
-
-    const { channels, width, height } = info
-
-    if (channels < 3) {
-        throw new Error('Unsupported number of channels')
-    }
-    const quartals = [
-        checkRectagle(data, channels, width, 0, 0, width / 2, height / 2),
-        checkRectagle(data, channels, width, width / 2, 0, width, height / 2),
-        checkRectagle(data, channels, width, 0, height / 2, width / 2, height),
-        checkRectagle(
-            data,
-            channels,
-            width,
-            width / 2,
-            height / 2,
-            width,
-            height,
-        ),
+    const s = sharp(buffer)
+    const { width } = await s.metadata()
+    const half = width / 2
+    const zones = [
+        [0, 0],
+        [0, half],
+        [half, 0],
+        [half, half],
     ]
-    const symbol = getSymbol(quartals)
+    const quadrants = await Promise.all(
+        zones.map(([top, left]) => checkRectagle(s, top, left, half)),
+    )
+    const symbol = getSymbol(quadrants)
     let fullImage: ImageType
-    if (quartals.every((q) => q.type === ImageType.mixed)) {
+    if (quadrants.every((q) => q.type === ImageType.transparent)) {
         fullImage = ImageType.transparent
-    } else if (quartals.every((q) => q.type === ImageType.solid)) {
+    } else if (quadrants.every((q) => q.type === ImageType.solid)) {
         fullImage = ImageType.solid
     } else {
         fullImage = ImageType.mixed
     }
     return {
         fullImage,
-        quartals,
+        quartals: quadrants,
         symbol,
     }
 }
@@ -214,7 +186,7 @@ export const createSolidTile = (
             channels: 3,
         },
     })
-    return compress(s, compression, 1)
+    return compress(s, compression, 1, false)
 }
 
 export const createMosaic = async (
@@ -247,9 +219,14 @@ export const createMosaic = async (
     return compress(s, compression, quality)
 }
 
-const compress = (s: Sharp, compression: CompressionType, quality: number) => {
+const compress = (
+    s: Sharp,
+    compression: CompressionType,
+    quality: number,
+    lossless: boolean = false,
+) => {
     if (compression === CompressionType.webp) {
-        s.webp({ ...WEBP_OPTIONS, quality })
+        s.webp({ ...WEBP_OPTIONS, quality, lossless })
     } else if (compression === CompressionType.png) {
         s.png({ ...PNG_OPTIONS, quality })
     }
