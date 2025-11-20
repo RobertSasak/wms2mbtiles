@@ -1,4 +1,5 @@
 import { queue } from 'async'
+import terminalLink from 'terminal-link'
 
 import got from './got.js'
 import mbtiles from './mbtiles.js'
@@ -186,7 +187,7 @@ const manager = async (
         if (!cached) {
             console.log(
                 symbol,
-                'Tile',
+                terminalLink('Tile', url ?? '', { fallback: () => 'Tile' }),
                 fullImage,
                 z,
                 x,
