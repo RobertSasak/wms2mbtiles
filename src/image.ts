@@ -6,7 +6,6 @@ import {
     ImageType,
 } from './types.js'
 
-const THRESHOLD_STD_DEV = 1
 const WEBP_OPTIONS: WebpOptions = {
     alphaQuality: 0,
     effort: 6,
@@ -26,6 +25,7 @@ const checkRectagle = async (
     top: number,
     left: number,
     width: number,
+    thresholdStdDev: number,
 ): Promise<ImageComposition> => {
     const raw = await s
         .clone()
@@ -43,7 +43,7 @@ const checkRectagle = async (
     let isMonochromatic = true
     for (let i = 0; i < channels.length; i++) {
         const { stdev } = channels[i]
-        if (stdev > THRESHOLD_STD_DEV) {
+        if (stdev > thresholdStdDev) {
             isMonochromatic = false
             break
         }
@@ -92,7 +92,10 @@ const getSymbol = (quadrants: ImageComposition[]) => {
     return symbolMap[index] || ' '
 }
 
-export const getImageInfo = async (buffer: Buffer): Promise<ImageInfo> => {
+export const getImageInfo = async (
+    buffer: Buffer,
+    monoThreshold: number = 0,
+): Promise<ImageInfo> => {
     const s = sharp(buffer)
     const { width } = await s.metadata()
     const half = width / 2
@@ -103,7 +106,9 @@ export const getImageInfo = async (buffer: Buffer): Promise<ImageInfo> => {
         [half, half],
     ]
     const quadrants = await Promise.all(
-        zones.map(([top, left]) => checkRectagle(s, top, left, half)),
+        zones.map(([top, left]) =>
+            checkRectagle(s, top, left, half, monoThreshold),
+        ),
     )
     const symbol = getSymbol(quadrants)
     let fullImage: ImageType

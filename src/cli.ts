@@ -21,6 +21,10 @@ const cli = meow(
     --serverType, -s     server type, wms or tile, default wms
     --skipTransparent    skip tiles that are fully transparent, default false
     --skipMonochromatic  skip tiles contain only single color, default false
+    --monoThreshold      configuration for skipMonochromatic. It helps ignoring
+                         noise in empty jpeg tiles. Tiles with colors of
+                         standard deviation less than this are considered
+                         monochromatic, default 0
     --verbose, -v        verbose output, default false
     Coordinates of a starting tile
     -z                   zoom, default 0
@@ -149,6 +153,10 @@ const cli = meow(
             quality: {
                 type: 'number',
                 default: 80,
+            },
+            monoThreshold: {
+                type: 'number',
+                default: 0,
             },
         },
     },

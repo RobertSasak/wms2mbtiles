@@ -6,6 +6,7 @@ export interface Options {
     emptyTileSizes?: number[]
     skipTransparent?: boolean
     skipMonochromatic?: boolean
+    monoThreshold?: number
     serverType?: ServerType
     verbose?: boolean
     startTile?: Tile

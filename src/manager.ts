@@ -43,6 +43,7 @@ const manager = async (
         serverType = 'wms',
         skipTransparent = false,
         skipMonochromatic = false,
+        monoThreshold = 0,
         verbose = false,
         startTile = {
             x: 0,
@@ -177,7 +178,10 @@ const manager = async (
             return
         }
 
-        const { fullImage, quartals, symbol } = await getImageInfo(d)
+        const { fullImage, quartals, symbol } = await getImageInfo(
+            d,
+            monoThreshold,
+        )
 
         if (!cached) {
             console.log(
