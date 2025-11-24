@@ -16,6 +16,8 @@ import {
     sliceMosaic,
 } from './image.js'
 
+const OFF_ZOOM = 30
+
 const downloadUrl = async (url: string): Promise<Buffer | undefined> => {
     return await got(url, {
         resolveBodyOnly: true,
@@ -43,9 +45,9 @@ const manager = async (
         emptyTileSizes = [],
         serverType = 'wms',
         skipTransparent = false,
-        skipSolid = false,
+        skipSolid = OFF_ZOOM,
         solidThreshold = 0,
-        skipMixed = 30,
+        skipMixed = OFF_ZOOM,
         verbose = false,
         startTile = {
             x: 0,
@@ -284,7 +286,7 @@ const manager = async (
             const parallel = children.map(async (c, i) => {
                 const { type, color } = quartals[i]
                 const { z, x, y } = c
-                if (skipSolid && color) {
+                if (skipSolid >= z && color) {
                     mustCommit = true
                     solidTiles++
                     const exists = await db
@@ -326,7 +328,7 @@ const manager = async (
     if (mosaicDownload) {
         console.log('Mosaic tiles:', mosaicImages)
     }
-    if (skipSolid) {
+    if (skipSolid < OFF_ZOOM) {
         console.log('Solid tiles:', solidTiles)
     }
     if (skipMixed) {

@@ -23,7 +23,8 @@ const cli = meow(
     --skipMixed          skip tiles that contain both transparent and opaque parts
                          from given zoom level. Useful to skip all edge tiles.
                          default 30
-    --skipSolid          skip tiles containing only single color, default false
+    --skipSolid          skip tiles containing only single color from given zoom level,
+                         default 30
     --solidThreshold     configuration for skipSolid. It helps ignoring
                          noise in empty jpeg tiles. Tiles with colors of
                          standard deviation less than this are considered
@@ -106,8 +107,7 @@ const cli = meow(
                 type: 'number',
             },
             skipSolid: {
-                type: 'boolean',
-                default: false,
+                type: 'number',
             },
             solidThreshold: {
                 type: 'number',

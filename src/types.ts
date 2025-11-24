@@ -6,7 +6,7 @@ export interface Options {
     emptyTileSizes?: number[]
     skipTransparent?: boolean
     skipMixed?: number
-    skipSolid?: boolean
+    skipSolid?: number
     solidThreshold?: number
     serverType?: ServerType
     verbose?: boolean

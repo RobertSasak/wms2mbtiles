@@ -45,7 +45,11 @@ Download maps from WMS and save it into mbtiles.
                          use it multiple times to set multiple sizes
     --serverType, -s     server type, wms or tile, default wms
     --skipTransparent    skip tiles that are fully transparent, default false
-    --skipSolid          skip tiles containing only single color, default false
+    --skipMixed          skip tiles that contain both transparent and opaque parts
+                         from given zoom level. Useful to skip all edge tiles.
+                         default 30
+    --skipSolid          skip tiles containing only single color from given zoom level,
+                         default 30
     --solidThreshold     configuration for skipSolid. It helps ignoring
                          noise in empty jpeg tiles. Tiles with colors of
                          standard deviation less than this are considered
@@ -73,20 +77,20 @@ Download maps from WMS and save it into mbtiles.
   Example for a WMS
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
     $ wms2mbtiles https://mywmsserver.com roads output.mbtiles
-      --maxZoom 5 \
-      --concurrency 2 \
-      --tileSize 256 \
-      --transparent false \
-      --format image/png;mode=8bit \
-      --verbose \
-      --emptyTileSizes 123 \
+      --maxZoom 5 \\
+      --concurrency 2 \\
+      --tileSize 256 \\
+      --transparent false \\
+      --format image/png;mode=8bit \\
+      --verbose \\
+      --emptyTileSizes 123 \\
       --emptyTileSizes 456
 
   Example for a Tile server
     $ wms2mbtiles https://mywmsserver.com/{z}/{x}/{y} output.mbtiles
-      --serverType tile \
-      --maxZoom 5 \
-      --concurrency 2 \
-      --emptyTileSizes 123 \
+      --serverType tile \\
+      --maxZoom 5 \\
+      --concurrency 2 \\
+      --emptyTileSizes 123 \\
       --emptyTileSizes 456
 ```
