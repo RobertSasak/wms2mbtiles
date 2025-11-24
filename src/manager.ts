@@ -299,20 +299,19 @@ const manager = async (
                         const compressed = await compressTile(
                             solidImage,
                             compression,
-                            100,
-                            false,
+                            1,
+                            true,
                         )
                         await db.put(z, x, y, compressed)
                     }
                 }
-                if (type !== ImageType.transparent) {
-                    q.unshift(c)
-                }
+                return type === ImageType.transparent ? undefined : c
             })
-            await Promise.all(parallel)
+            const a = await Promise.all(parallel)
             if (mustCommit) {
                 await db._commit()
             }
+            q.unshift(a.filter((b): b is Tile => b !== undefined))
         }
 
         callback()

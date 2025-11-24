@@ -31,7 +31,7 @@ const checkRectagle = async (
         .clone()
         .extract({ top, left, width, height: width })
         .toBuffer()
-    const { isOpaque, channels, dominant } = await sharp(raw).stats()
+    const { isOpaque, channels } = await sharp(raw).stats()
 
     if (isOpaque) {
         let isSolid = true
@@ -43,9 +43,17 @@ const checkRectagle = async (
             }
         }
         if (isSolid) {
+            const onePixelImage = await sharp(raw)
+                .resize(1, 1, {
+                    kernel: sharp.kernel.cubic,
+                })
+                .toFormat('raw')
+                .toBuffer()
+
+            const [r, g, b] = onePixelImage
             return {
                 type: ImageType.solid,
-                color: dominant,
+                color: { r, g, b },
             }
         }
         return {
