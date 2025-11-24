@@ -137,7 +137,7 @@ const manager = async (
                         0,
                     )
                     downloadedData += downloadedSize
-                    if (quads.some((a) => a === undefined)) {
+                    if (quads.every((a) => a === undefined)) {
                         return undefined
                     }
                     const mosaic = createMosaic(quads, tileSize)
