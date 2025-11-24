@@ -286,7 +286,7 @@ const manager = async (
             const parallel = children.map(async (c, i) => {
                 const { type, color } = quartals[i]
                 const { z, x, y } = c
-                if (skipSolid >= z && color) {
+                if (z >= skipSolid && color) {
                     mustCommit = true
                     solidTiles++
                     const exists = await db
