@@ -181,8 +181,17 @@ export const sliceMosaic = async (
     return Promise.all(tiles)
 }
 
-export const createSolidTile = (width: number, background: Color): Sharp =>
-    sharp({
+const SOLID_TILES_CACHE: { [key: string]: Buffer } = {}
+export const createSolidTile = async (
+    width: number,
+    background: Color,
+    compression: CompressionType,
+): Promise<Buffer> => {
+    const key = `${width}-${JSON.stringify(background)}-${compression}`
+    if (SOLID_TILES_CACHE[key]) {
+        return SOLID_TILES_CACHE[key]
+    }
+    const s = sharp({
         create: {
             width,
             height: width,
@@ -190,7 +199,10 @@ export const createSolidTile = (width: number, background: Color): Sharp =>
             channels: 4,
         },
     })
-
+    const compressed = await compressTile(s, compression, 1, true)
+    SOLID_TILES_CACHE[key] = compressed
+    return compressed
+}
 export const createMosaic = (
     quads: [
         Buffer | undefined,

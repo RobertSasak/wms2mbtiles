@@ -92,6 +92,11 @@ const manager = async (
             ? (x: number, y: number, z: number) =>
                   getArcgisURL(baseUrl, x, y, z, arcgisOptions)
             : (x: number, y: number, z: number) => getTileURL(baseUrl, x, y, z)
+    const transparentTile = await createSolidTile(
+        tileSize * 2,
+        '#00000000',
+        compression,
+    )
     const db = await mbtiles(`${mbtilesFile}?mode=rwc`)
     await db.startWriting()
     let total = 0,
@@ -158,8 +163,7 @@ const manager = async (
                     const { fullImage } = await getImageInfo(f, solidThreshold)
                     if (fullImage === ImageType.mixed) {
                         mixedSkipped++
-                        const solid = createSolidTile(tileSize, '#00000000')
-                        f = await compressTile(solid, compression, 1, true)
+                        f = transparentTile
                     } else {
                         f = await compressTile(f, compression, quality)
                     }
@@ -286,33 +290,31 @@ const manager = async (
             const parallel = children.map(async (c, i) => {
                 const { type, color } = quartals[i]
                 const { z, x, y } = c
-                if (z >= skipSolid && color) {
+                if (type === ImageType.transparent) {
+                    return undefined
+                } else if (z >= skipSolid && color) {
                     mustCommit = true
                     solidTiles++
-                    const exists = await db
-                        .get(z, x, y)
-                        .then(() => true)
-                        .catch(() => false)
-                    if (!exists) {
-                        const solidImage = createSolidTile(
-                            upscale ? tileSize * 2 : tileSize,
-                            color,
-                        )
-                        const compressed = await compressTile(
-                            solidImage,
-                            compression,
-                            1,
-                            true,
-                        )
-                        await db.put(z, x, y, compressed)
+                    const solidImage = await createSolidTile(
+                        upscale ? tileSize * 2 : tileSize,
+                        color,
+                        compression,
+                    )
+                    const recursive = async (t: Tile) => {
+                        if (t.z > maxZoom) {
+                            return
+                        }
+                        await db.put(t.z, t.x, t.y, solidImage)
+                        const children = getTileChildren(t)
+                        for (const c of children) {
+                            await recursive(c)
+                        }
                     }
+                    await recursive(c)
                 }
-                return type === ImageType.transparent ? undefined : c
+                return c
             })
             const a = await Promise.all(parallel)
-            if (mustCommit) {
-                await db._commit()
-            }
             q.unshift(a.filter((b): b is Tile => b !== undefined))
         }
 
