@@ -136,39 +136,33 @@ const manager = async (
                     )
                     downloadedData += downloadedSize
                     if (quads.some((a) => a === undefined)) {
-                        f = undefined
+                        return undefined
                     }
                     const mosaic = createMosaic(quads, tileSize)
                     f = await compressTile(mosaic, compression, quality)
                 } else {
                     url = getUrl(x, y, z)
                     f = await downloadUrl(url)
-                    if (f) {
-                        downloaded++
-                        downloadedSize = f.length
-                        downloadedData += downloadedSize
-
-                        if (z >= skipMixed) {
-                            const { fullImage } = await getImageInfo(
-                                f,
-                                solidThreshold,
-                            )
-                            if (fullImage === ImageType.mixed) {
-                                mixedSkipped++
-                                const solid = createSolidTile(
-                                    tileSize,
-                                    '#00000000',
-                                )
-                                f = await compressTile(solid, compression, 1)
-                            }
-                        } else {
-                            f = await compressTile(f, compression, quality)
-                        }
+                    if (!f) {
+                        return undefined
+                    }
+                    downloaded++
+                    downloadedSize = f?.length ?? 0
+                    downloadedData += downloadedSize
+                }
+                if (z < skipMixed) {
+                    f = await compressTile(f, compression, quality)
+                } else {
+                    const { fullImage } = await getImageInfo(f, solidThreshold)
+                    if (fullImage === ImageType.mixed) {
+                        mixedSkipped++
+                        const solid = createSolidTile(tileSize, '#00000000')
+                        f = await compressTile(solid, compression, 1, true)
+                    } else {
+                        f = await compressTile(f, compression, quality)
                     }
                 }
-                if (f) {
-                    await db.put(z, x, y, f)
-                }
+                await db.put(z, x, y, f)
                 return f
             })
 
@@ -209,9 +203,9 @@ const manager = async (
                 x,
                 y,
                 'downloaded ~',
-                d.length,
-                'bytes compressed ~',
                 downloadedSize,
+                'bytes | compressed ~',
+                d.length,
                 'bytes',
             )
         } else if (verbose) {

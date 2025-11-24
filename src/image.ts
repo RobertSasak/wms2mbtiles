@@ -213,7 +213,7 @@ export const compressTile = async (
     input: Buffer | Sharp,
     compression: CompressionType,
     quality: number,
-    lossless: boolean = true,
+    lossless: boolean = false,
 ): Promise<Buffer> => {
     if (Buffer.isBuffer(input) && compression === CompressionType.none) {
         return input
