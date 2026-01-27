@@ -17,7 +17,7 @@ yarn global add wms2mbtiles
 # or
 npm add -g wms2mbtiles
 # or simply run without instalation
-npx wm2mbtiles
+npx wms2mbtiles
 ```
 
 ## Usage
